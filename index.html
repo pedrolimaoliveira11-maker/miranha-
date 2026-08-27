@@ -1,1956 +1,897 @@
 <!DOCTYPE html>
+
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Jogo de Cavalos - Floresta</title>
 
 <style>
-* {
-    box-sizing: border-box;
-    user-select: none;
+*{
+    box-sizing:border-box;
+    user-select:none;
 }
 
-html, body {
-    margin: 0;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    background: #000;
-    font-family: Arial, Helvetica, sans-serif;
-    color: white;
+html,body{
+    margin:0;
+    width:100%;
+    height:100%;
+    overflow:hidden;
+    background:#111;
+    font-family:Arial,sans-serif;
+    color:white;
 }
 
-#game {
-    position: fixed;
-    inset: 0;
+#game{
+    position:fixed;
+    inset:0;
 }
 
-canvas {
-    display: block;
+canvas{
+    width:100%;
+    height:100%;
+    display:block;
 }
 
-/* ================= HUD ================= */
+/* HUD */
 
-.hud {
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
+#hud{
+    position:fixed;
+    inset:0;
+    pointer-events:none;
 }
 
-.topbar {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 72px;
-    background: linear-gradient(
-        rgba(5,8,8,.94),
-        rgba(5,8,8,.72)
-    );
-    border-bottom: 1px solid rgba(255,255,255,.12);
-    display: flex;
-    align-items: center;
-    padding: 0 24px;
-    pointer-events: auto;
-}
-
-.logo {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 21px;
-    font-weight: bold;
-    flex: 1;
-}
-
-.logoHorse {
-    font-size: 35px;
-}
-
-.topButtons {
-    display: flex;
-    gap: 10px;
-}
-
-.uiButton {
-    background: rgba(0,0,0,.65);
-    color: white;
-    border: 1px solid rgba(255,255,255,.15);
-    padding: 12px 18px;
-    border-radius: 7px;
-    cursor: pointer;
-    font-weight: bold;
-}
-
-.uiButton:hover {
-    background: rgba(70,100,70,.75);
+.panel{
+    background:rgba(0,0,0,.65);
+    border:1px solid rgba(255,255,255,.15);
+    border-radius:10px;
+    box-shadow:0 4px 15px rgba(0,0,0,.3);
 }
 
 /* Perfil */
 
-.profile {
-    position: absolute;
-    top: 92px;
-    left: 22px;
-    width: 285px;
-    padding: 14px;
-    border-radius: 12px;
-    background: rgba(0,0,0,.68);
-    border: 1px solid rgba(255,255,255,.12);
+#profile{
+    position:absolute;
+    top:15px;
+    left:15px;
+    width:245px;
+    padding:12px;
 }
 
-.profileTitle {
-    display: flex;
-    align-items: center;
-    gap: 12px;
+.profileTitle{
+    display:flex;
+    align-items:center;
+    gap:10px;
 }
 
-.avatar {
-    width: 58px;
-    height: 58px;
-    border-radius: 50%;
+.avatar{
+    width:48px;
+    height:48px;
+    border-radius:50%;
     background:
-        radial-gradient(circle at 50% 35%, #d99b70 0 12%, transparent 13%),
-        linear-gradient(#302015 0 45%, #18202a 46% 100%);
-    border: 2px solid #bd9b62;
+        radial-gradient(circle at 50% 35%,#d49a70 0 13%,transparent 14%),
+        linear-gradient(#24170f 0 40%,#283541 41%);
+    border:2px solid #b99a5b;
 }
 
-.playerName {
-    font-size: 18px;
-    font-weight: bold;
+.name{
+    font-weight:bold;
+    font-size:17px;
 }
 
-.level {
-    color: #cdb16d;
-    font-size: 13px;
-    margin-top: 4px;
+.level{
+    font-size:12px;
+    color:#e0c56e;
+    margin-top:4px;
 }
 
-.bar {
-    height: 13px;
-    background: rgba(255,255,255,.12);
-    border-radius: 10px;
-    overflow: hidden;
-    margin-top: 9px;
+.bar{
+    height:11px;
+    margin-top:8px;
+    background:#252525;
+    border-radius:10px;
+    overflow:hidden;
 }
 
-.barFill {
-    height: 100%;
-    transition: width .2s;
+.fill{
+    height:100%;
+    transition:width .15s;
 }
 
-.health {
-    background: linear-gradient(90deg,#8c1717,#e03434);
+.red{
+    background:#d83232;
 }
 
-.stamina {
-    background: linear-gradient(90deg,#168a39,#56df72);
+.green{
+    background:#35bd5b;
 }
 
-.barText {
-    position: relative;
-    margin-top: -15px;
-    text-align: center;
-    font-size: 10px;
-    font-weight: bold;
+.barText{
+    text-align:center;
+    font-size:9px;
+    margin-top:-11px;
 }
 
 /* Missão */
 
-.mission {
-    position: absolute;
-    top: 250px;
-    left: 22px;
-    width: 285px;
-    background: rgba(0,0,0,.68);
-    border: 1px solid rgba(255,255,255,.12);
-    padding: 15px;
-    border-radius: 10px;
+#mission{
+    position:absolute;
+    top:150px;
+    left:15px;
+    width:245px;
+    padding:12px;
+    font-size:12px;
 }
 
-.mission h3 {
-    margin: 0 0 12px;
-    font-size: 16px;
+#mission h3{
+    margin:0 0 9px;
+    font-size:15px;
 }
 
-.mission p {
-    margin: 6px 0;
-    font-size: 13px;
-}
-
-.questProgress {
-    margin-top: 10px;
-    color: #d6ba69;
+#quest{
+    color:#e1c56c;
+    margin-top:8px;
 }
 
 /* Controles */
 
-.controls {
-    position: absolute;
-    bottom: 25px;
-    left: 22px;
-    width: 220px;
-    background: rgba(0,0,0,.68);
-    border: 1px solid rgba(255,255,255,.12);
-    padding: 14px;
-    border-radius: 10px;
+#controls{
+    position:absolute;
+    bottom:15px;
+    left:15px;
+    width:210px;
+    padding:12px;
+    font-size:11px;
 }
 
-.controls h3 {
-    margin: 0 0 10px;
+#controls h3{
+    margin:0 0 8px;
+    font-size:14px;
 }
 
-.controlLine {
-    display: flex;
-    justify-content: space-between;
-    font-size: 12px;
-    margin: 6px 0;
+.control{
+    display:flex;
+    justify-content:space-between;
+    margin:5px 0;
 }
 
-.key {
-    padding: 4px 7px;
-    background: rgba(255,255,255,.15);
-    border-radius: 4px;
-    font-weight: bold;
+.key{
+    background:#333;
+    padding:3px 6px;
+    border-radius:4px;
 }
 
-/* Minimap */
+/* Mini mapa */
 
-.minimap {
-    position: absolute;
-    right: 25px;
-    top: 92px;
-    width: 190px;
-    height: 190px;
-    border-radius: 50%;
-    overflow: hidden;
-    background: rgba(22,48,28,.8);
-    border: 3px solid rgba(190,160,90,.8);
-    box-shadow: 0 0 30px rgba(0,0,0,.7);
+#mini{
+    position:absolute;
+    top:15px;
+    right:15px;
+    width:170px;
+    height:170px;
+    border-radius:50%;
+    overflow:hidden;
+    border:3px solid #ad965b;
+    background:#31552f;
 }
 
-#mapCanvas {
-    width: 100%;
-    height: 100%;
+#map{
+    width:100%;
+    height:100%;
 }
 
-.mapPlayer {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    width: 0;
-    height: 0;
-    border-left: 8px solid transparent;
-    border-right: 8px solid transparent;
-    border-bottom: 18px solid #ffe34f;
-    transform: translate(-50%,-50%);
+#mapArrow{
+    position:absolute;
+    left:50%;
+    top:50%;
+    transform:translate(-50%,-50%);
+    width:0;
+    height:0;
+    border-left:7px solid transparent;
+    border-right:7px solid transparent;
+    border-bottom:18px solid yellow;
 }
 
-/* Relógio */
+/* Hora */
 
-.clock {
-    position: absolute;
-    right: 30px;
-    top: 300px;
-    padding: 10px 17px;
-    background: rgba(0,0,0,.65);
-    border-radius: 7px;
-    font-size: 14px;
+#time{
+    position:absolute;
+    top:200px;
+    right:15px;
+    padding:8px 13px;
+    font-size:13px;
 }
 
-/* Horse stamina */
+/* Cavalo */
 
-.horseStatus {
-    position: absolute;
-    bottom: 96px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 310px;
-    background: rgba(0,0,0,.72);
-    padding: 9px 14px;
-    border-radius: 8px;
-    display: none;
+#horseStatus{
+    display:none;
+    position:absolute;
+    bottom:95px;
+    left:50%;
+    transform:translateX(-50%);
+    width:280px;
+    padding:8px;
+    text-align:center;
 }
 
-.horseStatus.show {
-    display: block;
-}
-
-.horseName {
-    text-align: center;
-    font-weight: bold;
-    margin-bottom: 5px;
+#horseStatus.active{
+    display:block;
 }
 
 /* Hotbar */
 
-.hotbar {
-    position: absolute;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    gap: 4px;
+#hotbar{
+    position:absolute;
+    bottom:15px;
+    left:50%;
+    transform:translateX(-50%);
+    display:flex;
+    gap:3px;
 }
 
-.slot {
-    width: 58px;
-    height: 58px;
-    background: rgba(0,0,0,.72);
-    border: 1px solid rgba(255,255,255,.28);
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    font-size: 25px;
+.slot{
+    width:48px;
+    height:48px;
+    background:rgba(0,0,0,.7);
+    border:1px solid #777;
+    border-radius:6px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    position:relative;
+    font-size:23px;
 }
 
-.slot.selected {
-    border: 2px solid #e1c875;
+.slot.selected{
+    border:2px solid #e3c65f;
 }
 
-.slotNumber {
-    position: absolute;
-    bottom: 3px;
-    right: 6px;
-    font-size: 10px;
-}
-
-.itemCount {
-    position: absolute;
-    top: 3px;
-    right: 6px;
-    font-size: 11px;
+.slot small{
+    position:absolute;
+    right:3px;
+    bottom:2px;
+    font-size:8px;
 }
 
 /* Ações */
 
-.actions {
-    position: absolute;
-    right: 30px;
-    bottom: 28px;
-    width: 190px;
-    height: 190px;
+#actions{
+    position:absolute;
+    right:20px;
+    bottom:20px;
+    width:170px;
+    height:170px;
 }
 
-.action {
-    position: absolute;
-    width: 68px;
-    height: 68px;
-    border-radius: 50%;
-    background: rgba(0,0,0,.65);
-    border: 2px solid rgba(220,195,120,.7);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    font-size: 25px;
-    pointer-events: auto;
-    cursor: pointer;
+.action{
+    position:absolute;
+    width:58px;
+    height:58px;
+    border-radius:50%;
+    background:rgba(0,0,0,.7);
+    color:white;
+    border:2px solid #ad965b;
+    cursor:pointer;
+    pointer-events:auto;
+    font-size:22px;
 }
 
-.action span {
-    font-size: 11px;
-    margin-top: 2px;
+.action span{
+    display:block;
+    font-size:8px;
 }
 
-.action:hover {
-    background: rgba(100,80,30,.75);
+.action:hover{
+    background:#554523;
 }
 
-.attack {
-    left: 0;
-    top: 70px;
+.attack{
+    left:0;
+    top:55px;
 }
 
-.interact {
-    right: 0;
-    top: 70px;
+.interact{
+    right:0;
+    top:55px;
 }
 
-.jump {
-    left: 61px;
-    top: 0;
+.jump{
+    left:56px;
+    top:0;
 }
 
-.ride {
-    left: 61px;
-    bottom: 0;
+.ride{
+    left:56px;
+    bottom:0;
 }
 
-/* Mensagens */
+/* Botões superiores */
 
-.notification {
-    position: absolute;
-    left: 50%;
-    top: 95px;
-    transform: translateX(-50%);
-    background: rgba(10,15,13,.8);
-    border: 1px solid rgba(255,255,255,.15);
-    border-radius: 9px;
-    padding: 12px 22px;
-    opacity: 0;
-    transition: opacity .3s;
+#topButtons{
+    position:absolute;
+    top:15px;
+    left:280px;
+    display:flex;
+    gap:5px;
+    pointer-events:auto;
 }
 
-.notification.show {
-    opacity: 1;
+.uiButton{
+    background:rgba(0,0,0,.7);
+    color:white;
+    border:1px solid #555;
+    border-radius:6px;
+    padding:9px 12px;
+    cursor:pointer;
+    font-weight:bold;
+    font-size:11px;
+}
+
+.uiButton:hover{
+    background:#4b4129;
+}
+
+/* Notificação */
+
+#notification{
+    position:absolute;
+    top:90px;
+    left:50%;
+    transform:translateX(-50%);
+    background:rgba(0,0,0,.75);
+    padding:10px 20px;
+    border-radius:8px;
+    opacity:0;
+    transition:.25s;
+}
+
+#notification.show{
+    opacity:1;
 }
 
 /* Telas */
 
-.screen {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,.78);
-    backdrop-filter: blur(7px);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 20;
-    pointer-events: auto;
+.screen{
+    position:fixed;
+    inset:0;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    background:rgba(0,0,0,.75);
+    z-index:20;
+    pointer-events:auto;
 }
 
-.screen.show {
-    display: flex;
+.screen.show{
+    display:flex;
 }
 
-.panel {
-    width: min(850px,90vw);
-    max-height: 85vh;
-    overflow: auto;
-    background: rgba(14,19,17,.96);
-    border: 1px solid rgba(210,190,120,.35);
-    border-radius: 15px;
-    padding: 28px;
-    box-shadow: 0 20px 80px #000;
+.window{
+    width:min(700px,90%);
+    max-height:85%;
+    overflow:auto;
+    padding:25px;
+    background:#151b17;
+    border:1px solid #8f7b4a;
+    border-radius:12px;
 }
 
-.panel h1 {
-    margin-top: 0;
+.close{
+    float:right;
+    background:#762525;
+    color:white;
+    border:0;
+    border-radius:4px;
+    padding:7px 12px;
+    cursor:pointer;
 }
 
-.close {
-    float: right;
-    background: #772222;
-    color: white;
-    border: 0;
-    border-radius: 5px;
-    padding: 8px 13px;
-    cursor: pointer;
+.inventory{
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    gap:8px;
 }
 
-.inventory {
-    display: grid;
-    grid-template-columns: repeat(6,1fr);
-    gap: 10px;
+.item{
+    height:90px;
+    background:#252d28;
+    border:1px solid #444;
+    border-radius:7px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-direction:column;
+    font-size:28px;
 }
 
-.invSlot {
-    height: 100px;
-    background: rgba(255,255,255,.07);
-    border: 1px solid rgba(255,255,255,.15);
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    font-size: 32px;
+.item span{
+    font-size:10px;
+    margin-top:5px;
 }
 
-.invSlot small {
-    font-size: 11px;
-    margin-top: 8px;
+/* Tela de carregamento */
+
+#loading{
+    position:fixed;
+    inset:0;
+    background:#101510;
+    z-index:100;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-direction:column;
 }
 
-.mapLarge {
-    width: 100%;
-    height: 500px;
-    background:
-        radial-gradient(circle at 25% 30%, #5d7147 0 5%, transparent 6%),
-        radial-gradient(circle at 70% 70%, #405c38 0 8%, transparent 9%),
-        linear-gradient(135deg,#345538,#68754a);
-    position: relative;
-    overflow: hidden;
-    border-radius: 10px;
+#loading h1{
+    color:#d9bd67;
 }
 
-.mapRiver {
-    position: absolute;
-    width: 130%;
-    height: 60px;
-    background: #477f9a;
-    transform: rotate(25deg);
-    left: -15%;
-    top: 55%;
+#loadbar{
+    width:250px;
+    height:10px;
+    background:#333;
+    border-radius:10px;
+    overflow:hidden;
 }
 
-.mapMarker {
-    position: absolute;
-    font-size: 25px;
+#loadfill{
+    width:0;
+    height:100%;
+    background:#5fc56c;
 }
 
-/* Crosshair */
+@media(max-width:800px){
+    #controls{
+        display:none;
+    }
 
-.crosshair {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    width: 10px;
-    height: 10px;
-    transform: translate(-50%,-50%);
-    border: 1px solid rgba(255,255,255,.65);
-    border-radius: 50%;
+    #profile{
+        width:190px;
+        transform:scale(.8);
+        transform-origin:top left;
+    }
+
+    #mission{
+        display:none;
+    }
+
+    #topButtons{
+        left:205px;
+    }
+
+    .uiButton{
+        padding:7px;
+        font-size:9px;
+    }
+
+    #mini{
+        width:120px;
+        height:120px;
+    }
 }
 </style>
+
 </head>
 
 <body>
 
-<div id="game"></div>
+<div id="game">
+<canvas id="canvas"></canvas>
+</div>
 
-<div class="hud">
+<div id="hud">
 
-    <div class="topbar">
-        <div class="logo">
-            <span class="logoHorse">🐎</span>
-            <span>Jogo de Cavalos — Floresta</span>
-        </div>
+<div id="topButtons">
+<button class="uiButton" onclick="openWindow('mapWindow')">🗺 MAPA</button>
+<button class="uiButton" onclick="openWindow('inventoryWindow')">🎒 INVENTÁRIO</button>
+<button class="uiButton" onclick="openWindow('missionWindow')">📜 MISSÃO</button>
+<button class="uiButton" onclick="pause()">⚙ MENU</button>
+</div>
 
-        <div class="topButtons">
-            <button class="uiButton" onclick="openMap()">🗺 MAPA</button>
-            <button class="uiButton" onclick="openInventory()">🎒 INVENTÁRIO</button>
-            <button class="uiButton" onclick="showMission()">📜 MISSÕES</button>
-            <button class="uiButton" onclick="pauseGame()">⚙ MENU</button>
-        </div>
-    </div>
+<div id="profile" class="panel">
 
-    <div class="profile">
-        <div class="profileTitle">
-            <div class="avatar"></div>
-            <div>
-                <div class="playerName">Aventureiro</div>
-                <div class="level">Nível 5</div>
-            </div>
-        </div>
+<div class="profileTitle">
 
-        <div class="bar">
-            <div id="healthBar" class="barFill health" style="width:100%"></div>
-        </div>
-        <div class="barText">120 / 120</div>
+<div class="avatar"></div>
 
-        <div class="bar">
-            <div id="playerStaminaBar" class="barFill stamina" style="width:100%"></div>
-        </div>
-        <div class="barText">100 / 100</div>
-    </div>
-
-    <div class="mission">
-        <h3>📜 Missão Atual</h3>
-        <p><b>Encontre o acampamento perdido</b></p>
-        <p>• Siga o rio até o acampamento.</p>
-        <p>• Explore a floresta.</p>
-        <div class="questProgress" id="questText">
-            Progresso: 0 / 3
-        </div>
-    </div>
-
-    <div class="controls">
-        <h3>Controles</h3>
-
-        <div class="controlLine">
-            <span>Movimentar</span>
-            <span class="key">WASD</span>
-        </div>
-
-        <div class="controlLine">
-            <span>Correr</span>
-            <span class="key">SHIFT</span>
-        </div>
-
-        <div class="controlLine">
-            <span>Pular</span>
-            <span class="key">ESPAÇO</span>
-        </div>
-
-        <div class="controlLine">
-            <span>Interagir</span>
-            <span class="key">E</span>
-        </div>
-
-        <div class="controlLine">
-            <span>Montar</span>
-            <span class="key">F</span>
-        </div>
-
-        <div class="controlLine">
-            <span>Mapa</span>
-            <span class="key">M</span>
-        </div>
-    </div>
-
-    <div class="minimap">
-        <canvas id="mapCanvas" width="190" height="190"></canvas>
-        <div class="mapPlayer"></div>
-    </div>
-
-    <div class="clock">
-        ☀ <span id="clock">10:45</span>
-    </div>
-
-    <div class="horseStatus" id="horseStatus">
-        <div class="horseName">🐎 VIGOR DO CAVALO</div>
-        <div class="bar">
-            <div id="horseStaminaBar" class="barFill stamina" style="width:80%"></div>
-        </div>
-        <div class="barText" id="horseStaminaText">80 / 100</div>
-    </div>
-
-    <div class="hotbar">
-
-        <div class="slot selected">
-            🐴
-            <span class="slotNumber">1</span>
-        </div>
-
-        <div class="slot">
-            🍎
-            <span class="itemCount">5</span>
-            <span class="slotNumber">2</span>
-        </div>
-
-        <div class="slot">
-            💧
-            <span class="itemCount">2</span>
-            <span class="slotNumber">3</span>
-        </div>
-
-        <div class="slot">
-            🪢
-            <span class="itemCount">2</span>
-            <span class="slotNumber">4</span>
-        </div>
-
-        <div class="slot">
-            🪓
-            <span class="itemCount">1</span>
-            <span class="slotNumber">5</span>
-        </div>
-
-        <div class="slot"><span class="slotNumber">6</span></div>
-        <div class="slot"><span class="slotNumber">7</span></div>
-        <div class="slot"><span class="slotNumber">8</span></div>
-        <div class="slot"><span class="slotNumber">9</span></div>
-        <div class="slot"><span class="slotNumber">0</span></div>
-
-    </div>
-
-    <div class="actions">
-
-        <button class="action attack" onclick="attack()">
-            ⚔
-            <span>ATACAR</span>
-        </button>
-
-        <button class="action interact" onclick="interact()">
-            ✋
-            <span>INTERAGIR</span>
-        </button>
-
-        <button class="action jump" onclick="jump()">
-            ⬆
-            <span>PULAR</span>
-        </button>
-
-        <button class="action ride" onclick="toggleHorse()">
-            🐎
-            <span id="rideText">CAVALGAR</span>
-        </button>
-
-    </div>
-
-    <div class="crosshair"></div>
-
-    <div id="notification" class="notification">
-        Bem-vindo à floresta!
-    </div>
+<div>
+<div class="name">Aventureiro</div>
+<div class="level">Nível 5</div>
+</div>
 
 </div>
 
+<div class="bar">
+<div id="health" class="fill red"></div>
+</div>
+
+<div class="barText" id="healthText"></div>
+
+<div class="bar">
+<div id="stamina" class="fill green"></div>
+</div>
+
+<div class="barText" id="staminaText"></div>
+
+</div>
+
+<div id="mission" class="panel">
+
+<h3>📜 Missão Atual</h3>
+
+<b>Encontre o acampamento perdido</b>
+
+<p>• Encontre o rio</p>
+<p>• Siga o caminho</p>
+<p>• Encontre o acampamento</p>
+
+<div id="quest">
+Progresso: 0 / 3
+</div>
+
+</div>
+
+<div id="controls" class="panel">
+
+<h3>🎮 Controles</h3>
+
+<div class="control">
+<span>Movimentar</span>
+<span class="key">W A S D</span>
+</div>
+
+<div class="control">
+<span>Correr</span>
+<span class="key">SHIFT</span>
+</div>
+
+<div class="control">
+<span>Pular</span>
+<span class="key">ESPAÇO</span>
+</div>
+
+<div class="control">
+<span>Montar</span>
+<span class="key">F</span>
+</div>
+
+<div class="control">
+<span>Interagir</span>
+<span class="key">E</span>
+</div>
+
+<div class="control">
+<span>Atacar</span>
+<span class="key">Q</span>
+</div>
+
+<div class="control">
+<span>Mapa</span>
+<span class="key">M</span>
+</div>
+
+</div>
+
+<div id="mini">
+<canvas id="map"></canvas>
+<div id="mapArrow"></div>
+</div>
+
+<div id="time" class="panel">
+☀️ <span id="clock">10:45</span>
+</div>
+
+<div id="horseStatus" class="panel">
+
+<b>🐎 VIGOR DO CAVALO</b>
+
+<div class="bar">
+<div id="horseStamina" class="fill green"></div>
+</div>
+
+<div class="barText" id="horseText"></div>
+
+</div>
+
+<div id="hotbar">
+
+<div class="slot selected">🐎<small>1</small></div>
+<div class="slot">🍎<small>2</small></div>
+<div class="slot">💧<small>3</small></div>
+<div class="slot">🪢<small>4</small></div>
+<div class="slot">🪓<small>5</small></div>
+<div class="slot"><small>6</small></div>
+<div class="slot"><small>7</small></div>
+<div class="slot"><small>8</small></div>
+
+</div>
+
+<div id="actions">
+
+<button class="action attack" onclick="attack()">
+⚔
+<span>ATACAR</span>
+</button>
+
+<button class="action interact" onclick="interact()">
+✋
+<span>INTERAGIR</span>
+</button>
+
+<button class="action jump" onclick="jump()">
+⬆
+<span>PULAR</span>
+</button>
+
+<button class="action ride" onclick="toggleHorse()">
+🐎
+<span id="rideText">MONTAR</span>
+</button>
+
+</div>
+
+<div id="notification"></div>
+
+</div>
 
 <!-- MAPA -->
 
-<div id="mapScreen" class="screen">
-    <div class="panel">
-        <button class="close" onclick="closeScreens()">X</button>
-        <h1>🗺 Mapa da Floresta</h1>
+<div id="mapWindow" class="screen">
 
-        <div class="mapLarge">
-            <div class="mapRiver"></div>
+<div class="window">
 
-            <div class="mapMarker" style="left:20%;top:25%">
-                🏕️
-            </div>
+<button class="close" onclick="closeWindows()">X</button>
 
-            <div class="mapMarker" style="left:65%;top:35%">
-                💧
-            </div>
+<h1>🗺 Mapa</h1>
 
-            <div class="mapMarker" style="left:50%;top:72%">
-                🐎
-            </div>
+<p>🌲 Floresta</p>
+<p>🔵 Rio</p>
+<p>🏕️ Acampamento</p>
+<p>💧 Cachoeira</p>
+<p>🟡 Você</p>
 
-            <div class="mapMarker" style="left:80%;top:70%">
-                ⭐
-            </div>
-        </div>
+<canvas id="bigMap"
+style="width:100%;height:400px;background:#355c35;border-radius:10px"> </canvas>
 
-        <p>🟡 Você</p>
-        <p>🏕️ Acampamento perdido</p>
-        <p>💧 Cachoeira</p>
-        <p>⭐ Ponto de interesse</p>
-    </div>
 </div>
 
+</div>
 
 <!-- INVENTÁRIO -->
 
-<div id="inventoryScreen" class="screen">
-    <div class="panel">
-        <button class="close" onclick="closeScreens()">X</button>
+<div id="inventoryWindow" class="screen">
 
-        <h1>🎒 Inventário</h1>
+<div class="window">
 
-        <div class="inventory">
+<button class="close" onclick="closeWindows()">X</button>
 
-            <div class="invSlot">
-                🐎
-                <small>Sela</small>
-            </div>
+<h1>🎒 Inventário</h1>
 
-            <div class="invSlot">
-                🍎
-                <small>Maçã ×5</small>
-            </div>
+<div class="inventory">
 
-            <div class="invSlot">
-                💧
-                <small>Água ×2</small>
-            </div>
+<div class="item">🐎<span>Sela</span></div>
+<div class="item">🍎<span>Maçã x5</span></div>
+<div class="item">💧<span>Água x2</span></div>
+<div class="item">🪢<span>Corda x2</span></div>
+<div class="item">🪓<span>Machado</span></div>
+<div class="item">🌿<span>Ervas x8</span></div>
+<div class="item">🥕<span>Cenoura x3</span></div>
+<div class="item">🥩<span>Carne x2</span></div>
+<div class="item">🪙<span>Moedas x34</span></div>
+<div class="item">🗺️<span>Mapa antigo</span></div>
 
-            <div class="invSlot">
-                🪢
-                <small>Corda ×2</small>
-            </div>
-
-            <div class="invSlot">
-                🪓
-                <small>Machado</small>
-            </div>
-
-            <div class="invSlot">
-                🌿
-                <small>Ervas ×8</small>
-            </div>
-
-            <div class="invSlot">
-                🥕
-                <small>Cenoura ×3</small>
-            </div>
-
-            <div class="invSlot">
-                🥩
-                <small>Carne ×2</small>
-            </div>
-
-            <div class="invSlot">
-                🪙
-                <small>Moedas ×34</small>
-            </div>
-
-            <div class="invSlot">
-                🗺
-                <small>Mapa antigo</small>
-            </div>
-
-        </div>
-    </div>
 </div>
 
+</div>
+
+</div>
 
 <!-- MISSÃO -->
 
-<div id="missionScreen" class="screen">
-    <div class="panel">
-        <button class="close" onclick="closeScreens()">X</button>
+<div id="missionWindow" class="screen">
 
-        <h1>📜 Missões</h1>
+<div class="window">
 
-        <h2>Encontre o acampamento perdido</h2>
+<button class="close" onclick="closeWindows()">X</button>
 
-        <p>
-            Um antigo explorador desapareceu dentro da floresta.
-            Encontre seu acampamento e descubra o que aconteceu.
-        </p>
+<h1>📜 Missão</h1>
 
-        <hr>
+<h2>Encontre o acampamento perdido</h2>
 
-        <p>☑ Entre na floresta</p>
-        <p id="missionRiver">□ Encontre o rio</p>
-        <p id="missionCamp">□ Encontre o acampamento</p>
-        <p id="missionWaterfall">□ Explore a cachoeira</p>
+<p>
+Um explorador desapareceu na floresta.
+Procure o rio e siga o caminho até encontrar
+o antigo acampamento.
+</p>
 
-        <hr>
+<hr>
 
-        <h3>Recompensa</h3>
-        <p>⭐ 500 XP</p>
-        <p>🪙 100 moedas</p>
-        <p>🐎 +10 Vigor do Cavalo</p>
-    </div>
+<p id="q1">□ Encontrar o rio</p>
+<p id="q2">□ Encontrar o acampamento</p>
+<p id="q3">□ Explorar a cachoeira</p>
+
+<h3>Recompensa</h3>
+
+<p>⭐ 500 XP</p>
+<p>🪙 100 moedas</p>
+<p>🐎 +10 vigor</p>
+
 </div>
 
+</div>
 
 <!-- MENU -->
 
-<div id="pauseScreen" class="screen">
-    <div class="panel" style="max-width:450px;text-align:center">
+<div id="pauseWindow" class="screen">
 
-        <h1>🌲 Floresta</h1>
+<div class="window" style="max-width:400px;text-align:center">
 
-        <p>Jogo de Cavalos</p>
+<h1>🌲 Floresta</h1>
 
-        <button class="uiButton" onclick="closeScreens()">
-            Continuar
-        </button>
+<p>Jogo de Cavalos</p>
 
-        <button class="uiButton" onclick="location.reload()">
-            Reiniciar
-        </button>
+<button class="uiButton" onclick="closeWindows()">
+CONTINUAR
+</button>
 
-    </div>
+<button class="uiButton" onclick="location.reload()">
+REINICIAR
+</button>
+
 </div>
 
+</div>
 
-<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<div id="loading">
+
+<h1>🐎 Jogo de Cavalos</h1>
+
+<p>Carregando floresta...</p>
+
+<div id="loadbar">
+<div id="loadfill"></div>
+</div>
+
+</div>
 
 <script>
-/* =========================================================
-   CONFIGURAÇÃO
-========================================================= */
-
-let scene;
-let camera;
-let renderer;
-let clock;
-let player;
-let horse;
-let horseGroup;
-let character;
-let trees = [];
-let rocks = [];
-let animals = [];
-let keys = {};
-
-let mounted = false;
-let attacking = false;
-let jumping = false;
-
-let playerHealth = 120;
-let playerStamina = 100;
-
-let horseStamina = 80;
-
-let quest = 0;
-
-const worldSize = 220;
-
 
 /* =========================================================
-   INICIALIZAÇÃO
+   MOTOR LEVE
 ========================================================= */
 
-init();
-animate();
+const canvas =
+document.getElementById("canvas");
 
+const ctx =
+canvas.getContext("2d");
 
-function init() {
+const mapCanvas =
+document.getElementById("map");
 
-    scene = new THREE.Scene();
+const mapCtx =
+mapCanvas.getContext("2d");
 
-    scene.fog = new THREE.FogExp2(
-        0x8da58a,
-        0.006
-    );
+let W=0;
+let H=0;
 
-    clock = new THREE.Clock();
+function resize(){
 
-    /* Céu */
+W=canvas.width=
+window.innerWidth;
 
-    scene.background = new THREE.Color(0x8da58a);
+H=canvas.height=
+window.innerHeight;
 
-    /* CÂMERA */
+mapCanvas.width=170;
+mapCanvas.height=170;
 
-    camera = new THREE.PerspectiveCamera(
-        65,
-        window.innerWidth / window.innerHeight,
-        0.1,
-        1000
-    );
-
-    camera.position.set(
-        0,
-        5,
-        10
-    );
-
-    /* RENDER */
-
-    renderer = new THREE.WebGLRenderer({
-        antialias: true,
-        powerPreference: "high-performance"
-    });
-
-    renderer.setSize(
-        window.innerWidth,
-        window.innerHeight
-    );
-
-    renderer.setPixelRatio(
-        Math.min(window.devicePixelRatio,2)
-    );
-
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type =
-        THREE.PCFSoftShadowMap;
-
-    renderer.outputColorSpace =
-        THREE.SRGBColorSpace;
-
-    document
-        .getElementById("game")
-        .appendChild(renderer.domElement);
-
-
-    /* LUZ */
-
-    const hemi =
-        new THREE.HemisphereLight(
-            0xcfe5ff,
-            0x30452d,
-            1.5
-        );
-
-    scene.add(hemi);
-
-
-    const sun =
-        new THREE.DirectionalLight(
-            0xfff1c4,
-            3
-        );
-
-    sun.position.set(
-        -50,
-        100,
-        30
-    );
-
-    sun.castShadow = true;
-
-    sun.shadow.mapSize.width = 2048;
-    sun.shadow.mapSize.height = 2048;
-
-    sun.shadow.camera.left = -100;
-    sun.shadow.camera.right = 100;
-    sun.shadow.camera.top = 100;
-    sun.shadow.camera.bottom = -100;
-
-    scene.add(sun);
-
-
-    /* CHÃO */
-
-    createGround();
-
-
-    /* FLORESTA */
-
-    createForest();
-
-
-    /* RIO */
-
-    createRiver();
-
-
-    /* CACHOEIRA */
-
-    createWaterfall();
-
-
-    /* ACAMPAMENTO */
-
-    createCamp();
-
-
-    /* PERSONAGEM */
-
-    createPlayer();
-
-
-    /* CAVALO */
-
-    createHorse();
-
-
-    /* ANIMAIS */
-
-    createAnimals();
-
-
-    /* EVENTOS */
-
-    window.addEventListener(
-        "resize",
-        onResize
-    );
-
-    window.addEventListener(
-        "keydown",
-        keyDown
-    );
-
-    window.addEventListener(
-        "keyup",
-        keyUp
-    );
-
-
-    showNotification(
-        "Explore a floresta e encontre o rio!"
-    );
 }
 
+resize();
+
+window.addEventListener("resize",resize);
+
 
 /* =========================================================
-   CHÃO
+   MUNDO
 ========================================================= */
 
-function createGround() {
+const WORLD=3000;
 
-    const geometry =
-        new THREE.PlaneGeometry(
-            worldSize,
-            worldSize,
-            80,
-            80
-        );
+const player={
+x:0,
+y:300,
+angle:0,
+speed:3,
+health:120,
+stamina:100,
+jump:0
+};
 
-    const material =
-        new THREE.MeshStandardMaterial({
-            color: 0x405b36,
-            roughness: 1
-        });
+const horse={
+x:80,
+y:300,
+angle:0,
+stamina:80
+};
 
-    const ground =
-        new THREE.Mesh(
-            geometry,
-            material
-        );
+let mounted=false;
+let attacking=false;
 
-    ground.rotation.x =
-        -Math.PI / 2;
+const camp={
+x:-650,
+y:-500
+};
 
-    ground.receiveShadow = true;
+const waterfall={
+x:100,
+y:-1150
+};
 
-    scene.add(ground);
-
-
-    /* Pequenas variações */
-
-    for(let i=0;i<500;i++){
-
-        const geo =
-            new THREE.SphereGeometry(
-                Math.random()*.05+.02,
-                5,
-                5
-            );
-
-        const mat =
-            new THREE.MeshStandardMaterial({
-                color:
-                    Math.random()>.5
-                    ?0x526d3d
-                    :0x334b2e
-            });
-
-        const grass =
-            new THREE.Mesh(
-                geo,
-                mat
-            );
-
-        grass.position.set(
-            (Math.random()-.5)*worldSize,
-            .02,
-            (Math.random()-.5)*worldSize
-        );
-
-        grass.scale.y =
-            Math.random()*5+1;
-
-        scene.add(grass);
-    }
-}
+const riverX=250;
 
 
 /* =========================================================
    ÁRVORES
 ========================================================= */
 
-function createTree(x,z,scale=1) {
+const trees=[];
 
-    const tree =
-        new THREE.Group();
+function randomTree(){
 
+let x;
+let y;
 
-    /* Tronco */
+do{
 
-    const trunkGeometry =
-        new THREE.CylinderGeometry(
-            .45*scale,
-            .7*scale,
-            6*scale,
-            8
-        );
+x=
+Math.random()*WORLD-WORLD/2;
 
-    const trunkMaterial =
-        new THREE.MeshStandardMaterial({
-            color: 0x4c2f1d,
-            roughness: 1
-        });
+y=
+Math.random()*WORLD-WORLD/2;
 
-    const trunk =
-        new THREE.Mesh(
-            trunkGeometry,
-            trunkMaterial
-        );
+}
+while(
+Math.abs(x)<250 &&
+Math.abs(y)<250
+);
 
-    trunk.position.y =
-        3*scale;
+trees.push({
+x:x,
+y:y,
+size:.7+
+Math.random()*.8
+});
 
-    trunk.castShadow = true;
-    trunk.receiveShadow = true;
-
-    tree.add(trunk);
-
-
-    /* Copa */
-
-    for(let i=0;i<4;i++){
-
-        const leafGeometry =
-            new THREE.ConeGeometry(
-                (2.7-i*.3)*scale,
-                4*scale,
-                8
-            );
-
-        const leafMaterial =
-            new THREE.MeshStandardMaterial({
-                color:
-                    i%2
-                    ?0x294b2d
-                    :0x315d32,
-                roughness: 1
-            });
-
-        const leaves =
-            new THREE.Mesh(
-                leafGeometry,
-                leafMaterial
-            );
-
-        leaves.position.y =
-            (6+i*1.2)*scale;
-
-        leaves.castShadow = true;
-
-        tree.add(leaves);
-    }
-
-
-    tree.position.set(x,0,z);
-
-    scene.add(tree);
-
-    trees.push(tree);
 }
 
 
-function createForest() {
+/*
+ Apenas 260 árvores.
+ Muito mais leve que centenas
+ de objetos 3D.
+*/
 
-    for(let i=0;i<260;i++){
-
-        let x,z;
-
-        do {
-            x =
-                (Math.random()-.5)*worldSize;
-            z =
-                (Math.random()-.5)*worldSize;
-        }
-        while(
-            Math.abs(x)<13 &&
-            Math.abs(z)<13
-        );
-
-        createTree(
-            x,
-            z,
-            .65+Math.random()*1.1
-        );
-    }
-
-
-    /* Árvores maiores no horizonte */
-
-    for(let i=0;i<70;i++){
-
-        let angle =
-            Math.random()*Math.PI*2;
-
-        let radius =
-            90+Math.random()*25;
-
-        createTree(
-            Math.cos(angle)*radius,
-            Math.sin(angle)*radius,
-            1.2+Math.random()
-        );
-    }
-}
-
-
-/* =========================================================
-   RIO
-========================================================= */
-
-function createRiver() {
-
-    const riverGeometry =
-        new THREE.PlaneGeometry(
-            11,
-            180
-        );
-
-    const riverMaterial =
-        new THREE.MeshStandardMaterial({
-            color: 0x3c82a0,
-            transparent: true,
-            opacity: .78,
-            roughness: .15,
-            metalness: .1
-        });
-
-    const river =
-        new THREE.Mesh(
-            riverGeometry,
-            riverMaterial
-        );
-
-    river.rotation.x =
-        -Math.PI/2;
-
-    river.position.set(
-        18,
-        .04,
-        0
-    );
-
-    scene.add(river);
-
-
-    /* Pedras */
-
-    for(let i=0;i<35;i++){
-
-        const rock =
-            createRock(
-                18+(Math.random()-.5)*14,
-                (Math.random()-.5)*180,
-                .3+Math.random()*.8
-            );
-
-        rocks.push(rock);
-    }
-}
+for(let i=0;i<260;i++)
+randomTree();
 
 
 /* =========================================================
    PEDRAS
 ========================================================= */
 
-function createRock(x,z,s=1){
+const rocks=[];
 
-    const geometry =
-        new THREE.DodecahedronGeometry(
-            s,
-            1
-        );
+for(let i=0;i<120;i++){
 
-    const material =
-        new THREE.MeshStandardMaterial({
-            color: 0x66675d,
-            roughness: 1
-        });
+rocks.push({
+x:Math.random()*WORLD-WORLD/2,
+y:Math.random()*WORLD-WORLD/2,
+size:2+Math.random()*6
+});
 
-    const rock =
-        new THREE.Mesh(
-            geometry,
-            material
-        );
-
-    rock.position.set(
-        x,
-        s*.45,
-        z
-    );
-
-    rock.rotation.set(
-        Math.random(),
-        Math.random(),
-        Math.random()
-    );
-
-    rock.castShadow = true;
-    rock.receiveShadow = true;
-
-    scene.add(rock);
-
-    return rock;
-}
-
-
-/* =========================================================
-   CACHOEIRA
-========================================================= */
-
-function createWaterfall(){
-
-    const cliffGeometry =
-        new THREE.BoxGeometry(
-            18,
-            16,
-            8
-        );
-
-    const cliffMaterial =
-        new THREE.MeshStandardMaterial({
-            color: 0x4c554c,
-            roughness: 1
-        });
-
-    const cliff =
-        new THREE.Mesh(
-            cliffGeometry,
-            cliffMaterial
-        );
-
-    cliff.position.set(
-        18,
-        8,
-        -78
-    );
-
-    cliff.castShadow = true;
-
-    scene.add(cliff);
-
-
-    const waterGeometry =
-        new THREE.PlaneGeometry(
-            7,
-            15
-        );
-
-    const waterMaterial =
-        new THREE.MeshStandardMaterial({
-            color: 0xb8e7ef,
-            transparent: true,
-            opacity: .75,
-            roughness: .1
-        });
-
-    const water =
-        new THREE.Mesh(
-            waterGeometry,
-            waterMaterial
-        );
-
-    water.position.set(
-        18,
-        7,
-        -73.8
-    );
-
-    scene.add(water);
-
-
-    /* Névoa */
-
-    for(let i=0;i<30;i++){
-
-        const geo =
-            new THREE.SphereGeometry(
-                .2+Math.random()*.4,
-                8,
-                8
-            );
-
-        const mat =
-            new THREE.MeshBasicMaterial({
-                color: 0xd9ffff,
-                transparent:true,
-                opacity:.18
-            });
-
-        const mist =
-            new THREE.Mesh(
-                geo,
-                mat
-            );
-
-        mist.position.set(
-            18+(Math.random()-.5)*10,
-            1+Math.random()*10,
-            -67+Math.random()*3
-        );
-
-        scene.add(mist);
-    }
-}
-
-
-/* =========================================================
-   ACAMPAMENTO
-========================================================= */
-
-function createCamp(){
-
-    const camp =
-        new THREE.Group();
-
-    camp.position.set(
-        -25,
-        0,
-        -48
-    );
-
-
-    /* Fogueira */
-
-    const fire =
-        new THREE.PointLight(
-            0xff8a32,
-            3,
-            12
-        );
-
-    fire.position.y=2;
-
-    camp.add(fire);
-
-
-    const fireGeo =
-        new THREE.ConeGeometry(
-            1,
-            3,
-            8
-        );
-
-    const fireMat =
-        new THREE.MeshBasicMaterial({
-            color: 0xff5b20
-        });
-
-    const flame =
-        new THREE.Mesh(
-            fireGeo,
-            fireMat
-        );
-
-    flame.position.y=1.5;
-
-    camp.add(flame);
-
-
-    /* Barraca */
-
-    const tentGeo =
-        new THREE.ConeGeometry(
-            3,
-            4,
-            4
-        );
-
-    const tentMat =
-        new THREE.MeshStandardMaterial({
-            color: 0x8a6641
-        });
-
-    const tent =
-        new THREE.Mesh(
-            tentGeo,
-            tentMat
-        );
-
-    tent.rotation.y =
-        Math.PI/4;
-
-    tent.position.set(
-        5,
-        2,
-        0
-    );
-
-    tent.castShadow=true;
-
-    camp.add(tent);
-
-
-    /* Troncos */
-
-    for(let i=0;i<4;i++){
-
-        const log =
-            new THREE.Mesh(
-                new THREE.CylinderGeometry(
-                    .2,
-                    .2,
-                    3,
-                    8
-                ),
-                new THREE.MeshStandardMaterial({
-                    color:0x4b2b19
-                })
-            );
-
-        log.rotation.z =
-            Math.PI/2;
-
-        log.rotation.y =
-            i*Math.PI/2;
-
-        log.position.y=.3;
-
-        camp.add(log);
-    }
-
-
-    scene.add(camp);
-}
-
-
-/* =========================================================
-   PERSONAGEM
-========================================================= */
-
-function createPlayer(){
-
-    player =
-        new THREE.Group();
-
-
-    /* Corpo */
-
-    const body =
-        new THREE.Mesh(
-            new THREE.CapsuleGeometry(
-                .5,
-                1.2,
-                6,
-                10
-            ),
-            new THREE.MeshStandardMaterial({
-                color:0x26313b
-            })
-        );
-
-    body.position.y=1.3;
-
-    body.castShadow=true;
-
-    player.add(body);
-
-
-    /* Cabeça */
-
-    const head =
-        new THREE.Mesh(
-            new THREE.SphereGeometry(
-                .38,
-                16,
-                16
-            ),
-            new THREE.MeshStandardMaterial({
-                color:0xc78961
-            })
-        );
-
-    head.position.y=2.35;
-
-    head.castShadow=true;
-
-    player.add(head);
-
-
-    /* Cabelo */
-
-    const hair =
-        new THREE.Mesh(
-            new THREE.SphereGeometry(
-                .4,
-                16,
-                16
-            ),
-            new THREE.MeshStandardMaterial({
-                color:0x241810
-            })
-        );
-
-    hair.scale.y=.55;
-
-    hair.position.y=2.58;
-
-    player.add(hair);
-
-
-    /* Braços */
-
-    for(let side of [-1,1]){
-
-        const arm =
-            new THREE.Mesh(
-                new THREE.CapsuleGeometry(
-                    .14,
-                    .8,
-                    5,
-                    8
-                ),
-                new THREE.MeshStandardMaterial({
-                    color:0x222a32
-                })
-            );
-
-        arm.position.set(
-            side*.62,
-            1.4,
-            0
-        );
-
-        arm.rotation.z =
-            side*.15;
-
-        arm.castShadow=true;
-
-        player.add(arm);
-    }
-
-
-    player.position.set(
-        0,
-        0,
-        8
-    );
-
-    scene.add(player);
-}
-
-
-/* =========================================================
-   CAVALO
-========================================================= */
-
-function createHorse(){
-
-    horseGroup =
-        new THREE.Group();
-
-    horse =
-        new THREE.Group();
-
-
-    const brown =
-        new THREE.MeshStandardMaterial({
-            color:0x6b3e22,
-            roughness:.85
-        });
-
-    const dark =
-        new THREE.MeshStandardMaterial({
-            color:0x211812,
-            roughness:.8
-        });
-
-
-    /* Corpo */
-
-    const body =
-        new THREE.Mesh(
-            new THREE.CapsuleGeometry(
-                .85,
-                2.1,
-                8,
-                16
-            ),
-            brown
-        );
-
-    body.rotation.z =
-        Math.PI/2;
-
-    body.position.y=1.55;
-
-    body.castShadow=true;
-
-    horse.add(body);
-
-
-    /* Pescoço */
-
-    const neck =
-        new THREE.Mesh(
-            new THREE.CapsuleGeometry(
-                .55,
-                1.4,
-                8,
-                12
-            ),
-            brown
-        );
-
-    neck.position.set(
-        1.05,
-        2.45,
-        0
-    );
-
-    neck.rotation.z=-.35;
-
-    neck.castShadow=true;
-
-    horse.add(neck);
-
-
-    /* Cabeça */
-
-    const head =
-        new THREE.Mesh(
-            new THREE.BoxGeometry(
-                .75,
-                .7,
-                .65
-            ),
-            brown
-        );
-
-    head.position.set(
-        1.75,
-        3.05,
-        0
-    );
-
-    head.rotation.z=-.12;
-
-    head.castShadow=true;
-
-    horse.add(head);
-
-
-    /* Focinho */
-
-    const muzzle =
-        new THREE.Mesh(
-            new THREE.BoxGeometry(
-                .45,
-                .4,
-                .55
-            ),
-            brown
-        );
-
-    muzzle.position.set(
-        2.15,
-        2.92,
-        0
-    );
-
-    horse.add(muzzle);
-
-
-    /* Orelhas */
-
-    for(let side of [-1,1]){
-
-        const ear =
-            new THREE.Mesh(
-                new THREE.ConeGeometry(
-                    .18,
-                    .55,
-                    5
-                ),
-                dark
-            );
-
-        ear.position.set(
-            1.55,
-            3.55,
-            side*.25
-        );
-
-        horse.add(ear);
-    }
-
-
-    /* Olhos */
-
-    for(let side of [-1,1]){
-
-        const eye =
-            new THREE.Mesh(
-                new THREE.SphereGeometry(
-                    .07,
-                    8,
-                    8
-                ),
-                new THREE.MeshBasicMaterial({
-                    color:0x050505
-                })
-            );
-
-        eye.position.set(
-            1.95,
-            3.15,
-            side*.31
-        );
-
-        horse.add(eye);
-    }
-
-
-    /* Crina */
-
-    const mane =
-        new THREE.Mesh(
-            new THREE.ConeGeometry(
-                .35,
-                2,
-                8
-            ),
-            dark
-        );
-
-    mane.rotation.z=
-        Math.PI/2;
-
-    mane.position.set(
-        .75,
-        3,
-        0
-    );
-
-    horse.add(mane);
-
-
-    /* Pernas */
-
-    for(let x of [-.75,.75]){
-
-        for(let z of [-.48,.48]){
-
-            const leg =
-                new THREE.Mesh(
-                    new THREE.CapsuleGeometry(
-                        .18,
-                        1.25,
-                        5,
-                        8
-                    ),
-                    brown
-                );
-
-            leg.position.set(
-                x,
-                .65,
-                z
-            );
-
-            leg.castShadow=true;
-
-            horse.add(leg);
-        }
-    }
-
-
-    /* Cauda */
-
-    const tail =
-        new THREE.Mesh(
-            new THREE.ConeGeometry(
-                .3,
-                1.7,
-                8
-            ),
-            dark
-        );
-
-    tail.position.set(
-        -1.8,
-        1.7,
-        0
-    );
-
-    tail.rotation.z=
-        Math.PI/2;
-
-    horse.add(tail);
-
-
-    /* Sela */
-
-    const saddle =
-        new THREE.Mesh(
-            new THREE.BoxGeometry(
-                1.3,
-                .2,
-                1
-            ),
-            new THREE.MeshStandardMaterial({
-                color:0x2b1710
-            })
-        );
-
-    saddle.position.y=2.15;
-
-    horse.add(saddle);
-
-
-    horseGroup.add(horse);
-
-    horseGroup.position.set(
-        0,
-        0,
-        3
-    );
-
-    horseGroup.rotation.y =
-        Math.PI;
-
-    scene.add(horseGroup);
 }
 
 
@@ -1958,94 +899,17 @@ function createHorse(){
    ANIMAIS
 ========================================================= */
 
-function createAnimals(){
+const animals=[];
 
-    for(let i=0;i<10;i++){
+for(let i=0;i<12;i++){
 
-        const deer =
-            new THREE.Group();
+animals.push({
+x:Math.random()*WORLD-WORLD/2,
+y:Math.random()*WORLD-WORLD/2,
+angle:Math.random()*Math.PI*2,
+speed:.2+Math.random()*.4
+});
 
-        const mat =
-            new THREE.MeshStandardMaterial({
-                color:0x795438
-            });
-
-
-        const body =
-            new THREE.Mesh(
-                new THREE.CapsuleGeometry(
-                    .35,
-                    .8,
-                    5,
-                    8
-                ),
-                mat
-            );
-
-        body.rotation.z=
-            Math.PI/2;
-
-        body.position.y=.8;
-
-        deer.add(body);
-
-
-        const head =
-            new THREE.Mesh(
-                new THREE.SphereGeometry(
-                    .25,
-                    10,
-                    10
-                ),
-                mat
-            );
-
-        head.position.set(
-            .65,
-            1.1,
-            0
-        );
-
-        deer.add(head);
-
-
-        for(let side of [-1,1]){
-
-            const leg =
-                new THREE.Mesh(
-                    new THREE.CylinderGeometry(
-                        .06,
-                        .08,
-                        .8,
-                        6
-                    ),
-                    mat
-                );
-
-            leg.position.set(
-                (Math.random()-.5)*.7,
-                .4,
-                side*.2
-            );
-
-            deer.add(leg);
-        }
-
-
-        deer.position.set(
-            (Math.random()-.5)*130,
-            0,
-            (Math.random()-.5)*130
-        );
-
-        scene.add(deer);
-
-        animals.push({
-            object:deer,
-            angle:Math.random()*Math.PI*2,
-            speed:.5+Math.random()
-        });
-    }
 }
 
 
@@ -2053,285 +917,209 @@ function createAnimals(){
    INPUT
 ========================================================= */
 
-function keyDown(e){
+const keys={};
 
-    keys[e.code]=true;
+window.addEventListener("keydown",e=>{
 
-    if(e.code==="KeyF")
-        toggleHorse();
+keys[e.code]=true;
 
-    if(e.code==="KeyE")
-        interact();
-
-    if(e.code==="Space"){
-        e.preventDefault();
-        jump();
-    }
-
-    if(e.code==="KeyM")
-        openMap();
-
-    if(e.code==="KeyI")
-        openInventory();
-
-    if(e.code==="Escape")
-        pauseGame();
-}
+if(
+[
+"Space",
+"ArrowUp",
+"ArrowDown",
+"ArrowLeft",
+"ArrowRight"
+].includes(e.code)
+)
+e.preventDefault();
 
 
-function keyUp(e){
+if(e.code==="KeyF")
+toggleHorse();
 
-    keys[e.code]=false;
-}
+if(e.code==="KeyE")
+interact();
+
+if(e.code==="KeyQ")
+attack();
+
+if(e.code==="Space")
+jump();
+
+if(e.code==="KeyM")
+openWindow("mapWindow");
+
+if(e.code==="KeyI")
+openWindow("inventoryWindow");
+
+if(e.code==="Escape")
+pause();
+
+});
 
 
-/* =========================================================
-   MONTAR
-========================================================= */
-
-function toggleHorse(){
-
-    if(!horseGroup) return;
-
-    const distance =
-        player.position.distanceTo(
-            horseGroup.position
-        );
-
-    if(!mounted){
-
-        if(distance < 5){
-
-            mounted=true;
-
-            player.visible=false;
-
-            document
-                .getElementById("horseStatus")
-                .classList.add("show");
-
-            document
-                .getElementById("rideText")
-                .textContent="DESMONTAR";
-
-            showNotification(
-                "Você montou no cavalo!"
-            );
-
-        } else {
-
-            showNotification(
-                "Chegue mais perto do cavalo."
-            );
-        }
-
-    } else {
-
-        mounted=false;
-
-        player.visible=true;
-
-        player.position.copy(
-            horseGroup.position
-        );
-
-        player.position.x += 2;
-
-        document
-            .getElementById("horseStatus")
-            .classList.remove("show");
-
-        document
-            .getElementById("rideText")
-            .textContent="CAVALGAR";
-
-        showNotification(
-            "Você desmontou."
-        );
-    }
-}
+window.addEventListener("keyup",e=>{
+keys[e.code]=false;
+});
 
 
 /* =========================================================
    MOVIMENTO
 ========================================================= */
 
-function updatePlayer(delta){
+function updatePlayer(){
 
-    if(!player) return;
+let dx=0;
+let dy=0;
 
+if(keys["KeyW"]||keys["ArrowUp"])
+dy-=1;
 
-    let forward=0;
-    let side=0;
+if(keys["KeyS"]||keys["ArrowDown"])
+dy+=1;
 
-    if(keys["KeyW"])
-        forward+=1;
+if(keys["KeyA"]||keys["ArrowLeft"])
+dx-=1;
 
-    if(keys["KeyS"])
-        forward-=1;
-
-    if(keys["KeyA"])
-        side-=1;
-
-    if(keys["KeyD"])
-        side+=1;
+if(keys["KeyD"]||keys["ArrowRight"])
+dx+=1;
 
 
-    const moving =
-        forward!==0 ||
-        side!==0;
+if(dx!==0||dy!==0){
+
+let length=
+Math.sqrt(dx*dx+dy*dy);
+
+dx/=length;
+dy/=length;
 
 
-    if(!moving){
-
-        /* Recupera stamina */
-
-        if(mounted){
-            horseStamina =
-                Math.min(
-                    100,
-                    horseStamina+
-                    delta*4
-                );
-        } else {
-            playerStamina =
-                Math.min(
-                    100,
-                    playerStamina+
-                    delta*8
-                );
-        }
-
-        return;
-    }
+let running=
+keys["ShiftLeft"]||
+keys["ShiftRight"];
 
 
-    let speed =
-        mounted
-        ? 8
-        : 4;
+let speed=
+mounted?5.5:3;
 
 
-    const running =
-        keys["ShiftLeft"] ||
-        keys["ShiftRight"];
+if(running){
+
+if(mounted){
+
+if(horse.stamina>0){
+
+speed=8;
+horse.stamina-=.5;
+
+}
+
+}else{
+
+if(player.stamina>0){
+
+speed=5;
+player.stamina-=.8;
+
+}
+
+}
+
+}else{
+
+if(mounted)
+horse.stamina=
+Math.min(
+100,
+horse.stamina+.12
+);
+
+else
+player.stamina=
+Math.min(
+100,
+player.stamina+.3
+);
+
+}
 
 
-    if(running){
+let obj=
+mounted?horse:player;
 
-        if(mounted){
+obj.x+=dx*speed;
+obj.y+=dy*speed;
 
-            if(horseStamina>1){
-
-                speed=13;
-
-                horseStamina -=
-                    delta*12;
-            }
-
-        } else {
-
-            if(playerStamina>1){
-
-                speed=7;
-
-                playerStamina -=
-                    delta*18;
-            }
-        }
-    }
+obj.angle=
+Math.atan2(dy,dx);
 
 
-    /* Direção */
+if(mounted){
 
-    const direction =
-        new THREE.Vector3(
-            side,
-            0,
-            -forward
-        );
+player.x=horse.x;
+player.y=horse.y;
+player.angle=horse.angle;
 
+}
 
-    if(direction.length()>0)
-        direction.normalize();
+}else{
 
+if(mounted)
+horse.stamina=
+Math.min(
+100,
+horse.stamina+.3
+);
 
-    const angle =
-        Math.atan2(
-            direction.x,
-            direction.z
-        );
+else
+player.stamina=
+Math.min(
+100,
+player.stamina+.5
+);
 
-
-    if(mounted){
-
-        horseGroup.rotation.y =
-            angle;
-
-        horseGroup.position.x +=
-            direction.x*speed*delta;
-
-        horseGroup.position.z +=
-            direction.z*speed*delta;
-
-        /* Personagem acompanha */
-
-        player.position.copy(
-            horseGroup.position
-        );
-
-    } else {
-
-        player.rotation.y =
-            angle;
-
-        player.position.x +=
-            direction.x*speed*delta;
-
-        player.position.z +=
-            direction.z*speed*delta;
-    }
+}
 
 
-    /* Limites */
+/* Limites */
 
-    const obj =
-        mounted
-        ? horseGroup
-        : player;
+player.x=
+Math.max(
+-WORLD/2,
+Math.min(
+WORLD/2,
+player.x
+)
+);
 
-    obj.position.x =
-        THREE.MathUtils.clamp(
-            obj.position.x,
-            -100,
-            100
-        );
+player.y=
+Math.max(
+-WORLD/2,
+Math.min(
+WORLD/2,
+player.y
+)
+);
 
-    obj.position.z =
-        THREE.MathUtils.clamp(
-            obj.position.z,
-            -100,
-            100
-        );
+horse.x=
+Math.max(
+-WORLD/2,
+Math.min(
+WORLD/2,
+horse.x
+)
+);
 
+horse.y=
+Math.max(
+-WORLD/2,
+Math.min(
+WORLD/2,
+horse.y
+)
+);
 
-    /* Animação */
-
-    const bob =
-        Math.sin(
-            performance.now()*.015
-        )*.04;
-
-    if(mounted){
-
-        horseGroup.position.y =
-            bob;
-
-    } else {
-
-        player.position.y =
-            bob;
-    }
 }
 
 
@@ -2341,49 +1129,11 @@ function updatePlayer(delta){
 
 function jump(){
 
-    if(jumping)
-        return;
+if(player.jump>0)
+return;
 
-    jumping=true;
+player.jump=1;
 
-    const obj =
-        mounted
-        ? horseGroup
-        : player;
-
-    const startY =
-        obj.position.y;
-
-    let time=0;
-
-    function animateJump(){
-
-        time+=.045;
-
-        obj.position.y =
-            startY+
-            Math.sin(time*Math.PI)*2.5;
-
-        if(time<1){
-
-            requestAnimationFrame(
-                animateJump
-            );
-
-        } else {
-
-            obj.position.y=startY;
-            jumping=false;
-        }
-    }
-
-    animateJump();
-
-    showNotification(
-        mounted
-        ? "O cavalo pulou!"
-        : "Você pulou!"
-    );
 }
 
 
@@ -2393,51 +1143,94 @@ function jump(){
 
 function attack(){
 
-    if(attacking)
-        return;
+if(attacking)
+return;
 
-    attacking=true;
+attacking=true;
 
-    const obj =
-        mounted
-        ? horse
-        : player;
+showNotification(
+mounted?
+"🐎 O cavalo atacou!":
+"⚔ Você atacou!"
+);
 
-    let oldRotation =
-        obj.rotation.y;
+setTimeout(()=>{
+attacking=false;
+},350);
 
-    let t=0;
+}
 
-    function attackAnimation(){
 
-        t+=.15;
+/* =========================================================
+   CAVALO
+========================================================= */
 
-        obj.rotation.y =
-            oldRotation+
-            Math.sin(t*Math.PI)*.8;
+function distance(a,b){
 
-        if(t<1){
+return Math.hypot(
+a.x-b.x,
+a.y-b.y
+);
 
-            requestAnimationFrame(
-                attackAnimation
-            );
+}
 
-        } else {
 
-            obj.rotation.y =
-                oldRotation;
+function toggleHorse(){
 
-            attacking=false;
-        }
-    }
+if(mounted){
 
-    attackAnimation();
+mounted=false;
 
-    showNotification(
-        mounted
-        ? "🐎 Coice!"
-        : "⚔ Ataque!"
-    );
+player.x=
+horse.x+35;
+
+player.y=
+horse.y;
+
+document
+.getElementById("horseStatus")
+.classList.remove("active");
+
+document
+.getElementById("rideText")
+.textContent="MONTAR";
+
+showNotification(
+"Você desmontou."
+);
+
+return;
+
+}
+
+
+if(distance(player,horse)<80){
+
+mounted=true;
+
+player.x=horse.x;
+player.y=horse.y;
+
+document
+.getElementById("horseStatus")
+.classList.add("active");
+
+document
+.getElementById("rideText")
+.textContent="DESMONTAR";
+
+showNotification(
+"🐎 Você montou no cavalo!"
+);
+
+}else{
+
+showNotification(
+"Chegue mais perto do cavalo."
+);
+
+}
+
 }
 
 
@@ -2445,289 +1238,1106 @@ function attack(){
    INTERAÇÃO
 ========================================================= */
 
+let quest=0;
+
 function interact(){
 
-    const distanceCamp =
-        player.position.distanceTo(
-            new THREE.Vector3(
-                -25,0,-48
-            )
-        );
+if(distance(player,horse)<80&&!mounted){
 
-    const distanceHorse =
-        player.position.distanceTo(
-            horseGroup.position
-        );
+showNotification(
+"🐎 Pressione F para montar."
+);
 
-    if(distanceHorse<5 && !mounted){
+return;
 
-        showNotification(
-            "Pressione F para montar no cavalo."
-        );
-
-        return;
-    }
+}
 
 
-    if(distanceCamp<12){
+if(
+Math.abs(player.x-riverX)<80
+){
 
-        if(quest<3){
+quest=
+Math.max(
+quest,
+1
+);
 
-            quest=3;
+document
+.getElementById("q1")
+.textContent=
+"☑ Encontrar o rio";
 
-            document
-                .getElementById("questText")
-                .textContent=
-                "Progresso: 3 / 3";
+showNotification(
+"💧 Você encontrou o rio!"
+);
 
-            document
-                .getElementById("missionCamp")
-                .textContent=
-                "☑ Encontre o acampamento";
-
-            showNotification(
-                "🏕 Você encontrou o acampamento perdido! Missão concluída!"
-            );
-
-        } else {
-
-            showNotification(
-                "Você já explorou este acampamento."
-            );
-        }
-
-        return;
-    }
+}
 
 
-    if(Math.abs(player.position.x-18)<10){
+if(
+distance(
+player,
+camp
+)<130
+){
 
-        quest=Math.max(quest,1);
+quest=
+Math.max(
+quest,
+2
+);
 
-        document
-            .getElementById("questText")
-            .textContent=
-            "Progresso: 1 / 3";
+document
+.getElementById("q2")
+.textContent=
+"☑ Encontrar o acampamento";
 
-        document
-            .getElementById("missionRiver")
-            .textContent=
-            "☑ Encontre o rio";
+showNotification(
+"🏕️ Acampamento encontrado!"
+);
 
-        showNotification(
-            "💧 Você encontrou o rio!"
-        );
-
-        return;
-    }
-
-
-    if(player.position.z < -65){
-
-        quest=3;
-
-        document
-            .getElementById("questWaterfall")
-            .textContent=
-            "☑ Explore a cachoeira";
-
-        document
-            .getElementById("questText")
-            .textContent=
-            "Progresso: 3 / 3";
-
-        showNotification(
-            "🌊 A cachoeira é linda! Missão concluída!"
-        );
-
-        return;
-    }
+}
 
 
-    showNotification(
-        "Não há nada interessante aqui."
-    );
+if(
+distance(
+player,
+waterfall
+)<160
+){
+
+quest=3;
+
+document
+.getElementById("q3")
+.textContent=
+"☑ Explorar a cachoeira";
+
+showNotification(
+"💧 Cachoeira explorada! Missão concluída!"
+);
+
+}
+
 }
 
 
 /* =========================================================
-   CÂMERA
+   ANIMAIS
 ========================================================= */
 
-function updateCamera(delta){
+function updateAnimals(){
 
-    const target =
-        mounted
-        ? horseGroup
-        : player;
+for(const a of animals){
 
+a.angle+=
+(Math.random()-.5)*.04;
 
-    const distance =
-        mounted
-        ? 11
-        : 9;
+a.x+=
+Math.cos(a.angle)*a.speed;
 
-    const height =
-        mounted
-        ? 6
-        : 5;
+a.y+=
+Math.sin(a.angle)*a.speed;
 
+}
 
-    const offset =
-        new THREE.Vector3(
-            0,
-            height,
-            distance
-        );
-
-    offset.applyAxisAngle(
-        new THREE.Vector3(0,1,0),
-        target.rotation.y
-    );
-
-
-    const desired =
-        target.position
-        .clone()
-        .add(offset);
-
-
-    camera.position.lerp(
-        desired,
-        Math.min(1,delta*5)
-    );
-
-
-    const look =
-        target.position
-        .clone();
-
-    look.y +=
-        mounted
-        ? 2
-        : 1.5;
-
-
-    camera.lookAt(look);
 }
 
 
 /* =========================================================
-   ANIMAÇÃO DOS ANIMAIS
+   DESENHO DO MUNDO
 ========================================================= */
 
-function updateAnimals(delta){
+function worldToScreen(x,y){
 
-    animals.forEach(a=>{
+return {
+x:
+W/2+(x-player.x),
+y:
+H/2+(y-player.y)
+};
 
-        a.angle +=
-            (Math.random()-.5)*
-            delta*.5;
-
-        a.object.position.x +=
-            Math.cos(a.angle)*
-            a.speed*
-            delta;
-
-        a.object.position.z +=
-            Math.sin(a.angle)*
-            a.speed*
-            delta;
-
-        a.object.rotation.y =
-            -a.angle;
-
-        if(
-            Math.abs(a.object.position.x)>100 ||
-            Math.abs(a.object.position.z)>100
-        ){
-
-            a.angle+=Math.PI;
-        }
-    });
 }
 
 
 /* =========================================================
-   RELÓGIO / DIA E NOITE
+   FUNDO
 ========================================================= */
 
-let gameMinutes=10*60+45;
+function drawGround(){
 
-function updateTime(delta){
+let night=
+getNight();
 
-    gameMinutes +=
-        delta*2;
+let gradient=
+ctx.createLinearGradient(
+0,
+0,
+0,
+H
+);
 
-    if(gameMinutes>=1440)
-        gameMinutes=0;
+if(night){
 
-    const hours =
-        Math.floor(gameMinutes/60);
+gradient.addColorStop(
+0,
+"#101b26"
+);
 
-    const minutes =
-        Math.floor(gameMinutes%60);
+gradient.addColorStop(
+1,
+"#17251b"
+);
 
-    document
-        .getElementById("clock")
-        .textContent =
-        String(hours).padStart(2,"0")
-        +":"+
-        String(minutes).padStart(2,"0");
+}else{
 
+gradient.addColorStop(
+0,
+"#83a76e"
+);
 
-    /* Luz */
+gradient.addColorStop(
+1,
+"#365637"
+);
 
-    const daylight =
-        Math.max(
-            0,
-            Math.sin(
-                ((gameMinutes/1440)*
-                Math.PI*2)-
-                Math.PI/2
-            )
-        );
+}
 
+ctx.fillStyle=gradient;
 
-    scene.background.lerp(
-        new THREE.Color(
-            daylight>.25
-            ?0x8da58a
-            :0x101b2b
-        ),
-        delta
-    );
+ctx.fillRect(
+0,
+0,
+W,
+H
+);
 
-
-    scene.fog.color.copy(
-        scene.background
-    );
 }
 
 
 /* =========================================================
-   BARRAS
+   RIO
 ========================================================= */
 
-function updateBars(){
+function drawRiver(){
 
-    document
-        .getElementById("playerStaminaBar")
-        .style.width =
-        playerStamina+"%";
+const p=
+worldToScreen(
+riverX,
+-WORLD/2
+);
+
+ctx.fillStyle="#3d7892";
+
+ctx.fillRect(
+p.x-45,
+0,
+90,
+H
+);
 
 
-    document
-        .getElementById("horseStaminaBar")
-        .style.width =
-        horseStamina+"%";
+/* reflexo */
+
+ctx.fillStyle=
+"rgba(255,255,255,.12)";
+
+for(let y=0;y<H;y+=35){
+
+ctx.fillRect(
+p.x-30,
+y,
+60,
+2
+);
+
+}
+
+}
 
 
-    document
-        .getElementById("horseStaminaText")
-        .textContent =
-        Math.floor(horseStamina)
-        +" / 100";
+/* =========================================================
+   CAMINHO
+========================================================= */
+
+function drawPath(){
+
+const start=
+worldToScreen(
+0,
+300
+);
+
+const end=
+worldToScreen(
+camp.x,
+camp.y
+);
+
+ctx.strokeStyle="#a8895b";
+
+ctx.lineWidth=45;
+
+ctx.lineCap="round";
+
+ctx.beginPath();
+
+ctx.moveTo(
+start.x,
+start.y
+);
+
+ctx.lineTo(
+end.x,
+end.y
+);
+
+ctx.stroke();
+
+
+ctx.strokeStyle="#c5a878";
+
+ctx.lineWidth=25;
+
+ctx.beginPath();
+
+ctx.moveTo(
+start.x,
+start.y
+);
+
+ctx.lineTo(
+end.x,
+end.y
+);
+
+ctx.stroke();
+
+}
+
+
+/* =========================================================
+   ÁRVORE
+========================================================= */
+
+function drawTree(t){
+
+const p=
+worldToScreen(
+t.x,
+t.y
+);
+
+if(
+p.x<-80||
+p.x>W+80||
+p.y<-100||
+p.y>H+100
+)
+return;
+
+let s=t.size;
+
+
+ctx.fillStyle="#553820";
+
+ctx.fillRect(
+p.x-8*s,
+p.y-35*s,
+16*s,
+55*s
+);
+
+
+ctx.fillStyle="#21472b";
+
+ctx.beginPath();
+
+ctx.arc(
+p.x,
+p.y-50*s,
+45*s,
+0,
+Math.PI*2
+);
+
+ctx.fill();
+
+
+ctx.fillStyle="#2d5b32";
+
+ctx.beginPath();
+
+ctx.arc(
+p.x-25*s,
+p.y-30*s,
+30*s,
+0,
+Math.PI*2
+);
+
+ctx.fill();
+
+
+ctx.beginPath();
+
+ctx.arc(
+p.x+25*s,
+p.y-30*s,
+30*s,
+0,
+Math.PI*2
+);
+
+ctx.fill();
+
+}
+
+
+/* =========================================================
+   PEDRA
+========================================================= */
+
+function drawRock(r){
+
+const p=
+worldToScreen(
+r.x,
+r.y
+);
+
+if(
+p.x<-30||
+p.x>W+30||
+p.y<-30||
+p.y>H+30
+)
+return;
+
+ctx.fillStyle="#65665d";
+
+ctx.beginPath();
+
+ctx.ellipse(
+p.x,
+p.y,
+r.size*1.5,
+r.size,
+0,
+0,
+Math.PI*2
+);
+
+ctx.fill();
+
+}
+
+
+/* =========================================================
+   CAVALO
+========================================================= */
+
+function drawHorse(){
+
+const p=
+worldToScreen(
+horse.x,
+horse.y
+);
+
+if(
+p.x<-100||
+p.x>W+100||
+p.y<-100||
+p.y>H+100
+)
+return;
+
+
+let s=1;
+
+if(mounted)
+s=1.15;
+
+
+/* sombra */
+
+ctx.fillStyle=
+"rgba(0,0,0,.25)";
+
+ctx.beginPath();
+
+ctx.ellipse(
+p.x,
+p.y+22,
+45*s,
+12*s,
+0,
+0,
+Math.PI*2
+);
+
+ctx.fill();
+
+
+/* corpo */
+
+ctx.fillStyle="#754526";
+
+ctx.beginPath();
+
+ctx.ellipse(
+p.x,
+p.y,
+45*s,
+23*s,
+0,
+0,
+Math.PI*2
+);
+
+ctx.fill();
+
+
+/* pescoço */
+
+ctx.fillStyle="#6b3c20";
+
+ctx.save();
+
+ctx.translate(
+p.x+32*s,
+p.y-22*s
+);
+
+ctx.rotate(-.35);
+
+ctx.fillRect(
+-12*s,
+-38*s,
+24*s,
+55*s
+);
+
+ctx.restore();
+
+
+/* cabeça */
+
+ctx.fillStyle="#754526";
+
+ctx.beginPath();
+
+ctx.ellipse(
+p.x+58*s,
+p.y-42*s,
+24*s,
+19*s,
+-.2,
+0,
+Math.PI*2
+);
+
+ctx.fill();
+
+
+/* focinho */
+
+ctx.fillStyle="#5a321d";
+
+ctx.beginPath();
+
+ctx.ellipse(
+p.x+77*s,
+p.y-37*s,
+13*s,
+11*s,
+0,
+0,
+Math.PI*2
+);
+
+ctx.fill();
+
+
+/* crina */
+
+ctx.fillStyle="#24170f";
+
+ctx.beginPath();
+
+ctx.moveTo(
+p.x+20*s,
+p.y-25*s
+);
+
+ctx.lineTo(
+p.x+30*s,
+p.y-55*s
+);
+
+ctx.lineTo(
+p.x+45*s,
+p.y-28*s
+);
+
+ctx.closePath();
+
+ctx.fill();
+
+
+/* olho */
+
+ctx.fillStyle="#080808";
+
+ctx.beginPath();
+
+ctx.arc(
+p.x+65*s,
+p.y-48*s,
+3*s,
+0,
+Math.PI*2
+);
+
+ctx.fill();
+
+
+/* pernas */
+
+ctx.strokeStyle="#4c2c1a";
+
+ctx.lineWidth=9*s;
+
+for(let i=-1;i<=1;i+=2){
+
+ctx.beginPath();
+
+ctx.moveTo(
+p.x+i*23*s,
+p.y+12*s
+);
+
+ctx.lineTo(
+p.x+i*27*s,
+p.y+48*s
+);
+
+ctx.stroke();
+
+}
+
+
+/* sela */
+
+if(mounted){
+
+ctx.fillStyle="#2a170f";
+
+ctx.fillRect(
+p.x-20*s,
+p.y-20*s,
+40*s,
+12*s
+);
+
+}
+
+}
+
+
+/* =========================================================
+   PERSONAGEM
+========================================================= */
+
+function drawPlayer(){
+
+if(mounted)
+return;
+
+const p=
+worldToScreen(
+player.x,
+player.y
+);
+
+let jumpHeight=
+Math.sin(
+player.jump*Math.PI
+)*25;
+
+
+if(player.jump>0){
+
+player.jump-=.04;
+
+if(player.jump<0)
+player.jump=0;
+
+}
+
+
+/* sombra */
+
+ctx.fillStyle=
+"rgba(0,0,0,.25)";
+
+ctx.beginPath();
+
+ctx.ellipse(
+p.x,
+p.y+18,
+18,
+7,
+0,
+0,
+Math.PI*2
+);
+
+ctx.fill();
+
+
+/* corpo */
+
+ctx.fillStyle="#27333b";
+
+ctx.fillRect(
+p.x-12,
+p.y-20-jumpHeight,
+24,
+35
+);
+
+
+/* cabeça */
+
+ctx.fillStyle="#c98d67";
+
+ctx.beginPath();
+
+ctx.arc(
+p.x,
+p.y-32-jumpHeight,
+11,
+0,
+Math.PI*2
+);
+
+ctx.fill();
+
+
+/* cabelo */
+
+ctx.fillStyle="#251810";
+
+ctx.beginPath();
+
+ctx.arc(
+p.x,
+p.y-37-jumpHeight,
+12,
+Math.PI,
+Math.PI*2
+);
+
+ctx.fill();
+
+
+/* pernas */
+
+ctx.strokeStyle="#20262c";
+
+ctx.lineWidth=7;
+
+ctx.beginPath();
+
+ctx.moveTo(
+p.x-6,
+p.y+14-jumpHeight
+);
+
+ctx.lineTo(
+p.x-8,
+p.y+35-jumpHeight
+);
+
+ctx.moveTo(
+p.x+6,
+p.y+14-jumpHeight
+);
+
+ctx.lineTo(
+p.x+8,
+p.y+35-jumpHeight
+);
+
+ctx.stroke();
+
+}
+
+
+/* =========================================================
+   ANIMAIS
+========================================================= */
+
+function drawAnimals(){
+
+for(const a of animals){
+
+const p=
+worldToScreen(
+a.x,
+a.y
+);
+
+if(
+p.x<-40||
+p.x>W+40||
+p.y<-40||
+p.y>H+40
+)
+continue;
+
+ctx.fillStyle="#765335";
+
+ctx.beginPath();
+
+ctx.ellipse(
+p.x,
+p.y,
+18,
+9,
+0,
+0,
+Math.PI*2
+);
+
+ctx.fill();
+
+
+ctx.beginPath();
+
+ctx.arc(
+p.x+17,
+p.y-5,
+7,
+0,
+Math.PI*2
+);
+
+ctx.fill();
+
+
+ctx.strokeStyle="#63432b";
+
+ctx.lineWidth=3;
+
+ctx.beginPath();
+
+ctx.moveTo(
+p.x-9,
+p.y+5
+);
+
+ctx.lineTo(
+p.x-12,
+p.y+18
+);
+
+ctx.moveTo(
+p.x+8,
+p.y+5
+);
+
+ctx.lineTo(
+p.x+11,
+p.y+18
+);
+
+ctx.stroke();
+
+}
+
+}
+
+
+/* =========================================================
+   ACAMPAMENTO
+========================================================= */
+
+function drawCamp(){
+
+const p=
+worldToScreen(
+camp.x,
+camp.y
+);
+
+if(
+p.x<-150||
+p.x>W+150||
+p.y<-150||
+p.y>H+150
+)
+return;
+
+
+/* barraca */
+
+ctx.fillStyle="#967047";
+
+ctx.beginPath();
+
+ctx.moveTo(
+p.x-50,
+p.y+30
+);
+
+ctx.lineTo(
+p.x,
+p.y-30
+);
+
+ctx.lineTo(
+p.x+50,
+p.y+30
+);
+
+ctx.closePath();
+
+ctx.fill();
+
+
+/* fogo */
+
+ctx.fillStyle="#e65b23";
+
+ctx.beginPath();
+
+ctx.arc(
+p.x,
+p.y+45,
+14,
+0,
+Math.PI*2
+);
+
+ctx.fill();
+
+ctx.fillStyle="#ffd75c";
+
+ctx.beginPath();
+
+ctx.arc(
+p.x,
+p.y+42,
+7,
+0,
+Math.PI*2
+);
+
+ctx.fill();
+
+
+/* placa */
+
+ctx.fillStyle="#6b482d";
+
+ctx.fillRect(
+p.x+55,
+p.y-10,
+45,
+6
+);
+
+ctx.fillStyle="#e5cf9a";
+
+ctx.font="12px Arial";
+
+ctx.fillText(
+"ACAMPAMENTO",
+p.x+30,
+p.y-20
+);
+
+}
+
+
+/* =========================================================
+   CACHOEIRA
+========================================================= */
+
+function drawWaterfall(){
+
+const p=
+worldToScreen(
+waterfall.x,
+waterfall.y
+);
+
+if(
+p.x<-200||
+p.x>W+200||
+p.y<-200||
+p.y>H+200
+)
+return;
+
+
+/* montanha */
+
+ctx.fillStyle="#555d55";
+
+ctx.beginPath();
+
+ctx.moveTo(
+p.x-150,
+p.y+80
+);
+
+ctx.lineTo(
+p.x-90,
+p.y-100
+);
+
+ctx.lineTo(
+p.x,
+p.y-180
+);
+
+ctx.lineTo(
+p.x+100,
+p.y-80
+);
+
+ctx.lineTo(
+p.x+170,
+p.y+80
+);
+
+ctx.closePath();
+
+ctx.fill();
+
+
+/* água */
+
+ctx.fillStyle="#8dd5e7";
+
+ctx.fillRect(
+p.x-25,
+p.y-100,
+50,
+180
+);
+
+
+/* queda */
+
+ctx.fillStyle="#bcecf4";
+
+for(let i=0;i<7;i++){
+
+ctx.fillRect(
+p.x-18+i*5,
+p.y-90,
+3,
+150
+);
+
+}
+
+ctx.fillStyle="#75b9cf";
+
+ctx.beginPath();
+
+ctx.ellipse(
+p.x,
+p.y+80,
+70,
+25,
+0,
+0,
+Math.PI*2
+);
+
+ctx.fill();
+
+}
+
+
+/* =========================================================
+   DIA / NOITE
+========================================================= */
+
+let gameTime=10*60+45;
+
+function getNight(){
+
+let hour=
+Math.floor(gameTime/60);
+
+return hour<6||hour>=19;
+
+}
+
+
+function updateTime(){
+
+gameTime+=.12;
+
+if(gameTime>=1440)
+gameTime=0;
+
+let h=
+Math.floor(gameTime/60);
+
+let m=
+Math.floor(gameTime%60);
+
+document
+.getElementById("clock")
+.textContent=
+String(h).padStart(2,"0")
++":"+
+String(m).padStart(2,"0");
+
+}
+
+
+/* =========================================================
+   EFEITO NOTURNO
+========================================================= */
+
+function drawNight(){
+
+if(!getNight())
+return;
+
+let alpha=.48;
+
+let h=
+Math.floor(gameTime/60);
+
+if(h>=5&&h<7)
+alpha=.25;
+
+if(h>=18&&h<20)
+alpha=.25;
+
+ctx.fillStyle=
+"rgba(5,12,30,"+
+alpha+
+")";
+
+ctx.fillRect(
+0,
+0,
+W,
+H
+);
+
 }
 
 
@@ -2735,164 +2345,174 @@ function updateBars(){
    MINIMAPA
 ========================================================= */
 
-function updateMinimap(){
+function drawMiniMap(){
 
-    const canvas =
-        document.getElementById(
-            "mapCanvas"
-        );
+mapCtx.clearRect(
+0,
+0,
+170,
+170
+);
 
-    const ctx =
-        canvas.getContext("2d");
+mapCtx.fillStyle="#315732";
 
-    ctx.clearRect(
-        0,
-        0,
-        190,
-        190
-    );
-
-
-    /* Fundo */
-
-    ctx.fillStyle="#345538";
-
-    ctx.fillRect(
-        0,
-        0,
-        190,
-        190
-    );
+mapCtx.fillRect(
+0,
+0,
+170,
+170
+);
 
 
-    /* Rio */
+/* rio */
 
-    ctx.strokeStyle="#4e91ac";
-    ctx.lineWidth=13;
+mapCtx.fillStyle="#3c7e9a";
 
-    ctx.beginPath();
-
-    ctx.moveTo(
-        100,
-        0
-    );
-
-    ctx.bezierCurveTo(
-        80,40,
-        130,80,
-        90,120
-    );
-
-    ctx.bezierCurveTo(
-        50,155,
-        110,180,
-        100,190
-    );
-
-    ctx.stroke();
+mapCtx.fillRect(
+70,
+0,
+25,
+170
+);
 
 
-    /* Acampamento */
+/* acampamento */
 
-    ctx.fillStyle="#e2c15d";
+let cx=
+(camp.x+WORLD/2)/WORLD*170;
 
-    const campX =
-        (-25+100)/200*190;
+let cy=
+(camp.y+WORLD/2)/WORLD*170;
 
-    const campY =
-        (-48+100)/200*190;
+mapCtx.fillStyle="#e1bd55";
 
-    ctx.beginPath();
+mapCtx.beginPath();
 
-    ctx.arc(
-        campX,
-        campY,
-        5,
-        0,
-        Math.PI*2
-    );
+mapCtx.arc(
+cx,
+cy,
+5,
+0,
+Math.PI*2
+);
 
-    ctx.fill();
+mapCtx.fill();
 
 
-    /* Cachoeira */
+/* cachoeira */
 
-    ctx.fillStyle="#a9e6f5";
+let wx=
+(waterfall.x+WORLD/2)/WORLD*170;
 
-    const waterX =
-        (18+100)/200*190;
+let wy=
+(waterfall.y+WORLD/2)/WORLD*170;
 
-    const waterY =
-        (-78+100)/200*190;
+mapCtx.fillStyle="#8ed9e9";
 
-    ctx.beginPath();
+mapCtx.beginPath();
 
-    ctx.arc(
-        waterX,
-        waterY,
-        5,
-        0,
-        Math.PI*2
-    );
+mapCtx.arc(
+wx,
+wy,
+5,
+0,
+Math.PI*2
+);
 
-    ctx.fill();
+mapCtx.fill();
+
 }
 
 
 /* =========================================================
-   LOOP
+   MAPA GRANDE
 ========================================================= */
 
-function animate(){
+function drawBigMap(){
 
-    requestAnimationFrame(
-        animate
-    );
+const c=
+document.getElementById("bigMap");
 
-    const delta =
-        Math.min(
-            clock.getDelta(),
-            .05
-        );
+const x=
+c.getContext("2d");
 
+c.width=700;
+c.height=400;
 
-    updatePlayer(delta);
+x.fillStyle="#355d36";
 
-    updateAnimals(delta);
-
-    updateCamera(delta);
-
-    updateTime(delta);
-
-    updateBars();
-
-    updateMinimap();
+x.fillRect(
+0,
+0,
+700,
+400
+);
 
 
-    /* Água animada */
+/* rio */
 
-    scene.traverse(obj=>{
+x.fillStyle="#4382a0";
 
-        if(
-            obj.material &&
-            obj.material.color &&
-            obj.material.color.getHex()===
-            0x3c82a0
-        ){
-
-            obj.position.y =
-                .04+
-                Math.sin(
-                    performance.now()*.001
-                )*.02;
-        }
-    });
+x.fillRect(
+300,
+0,
+50,
+400
+);
 
 
-    renderer.render(
-        scene,
-        camera
-    );
+/* floresta */
+
+x.fillStyle="#244b2a";
+
+for(let i=0;i<80;i++){
+
+let tx=Math.random()*700;
+let ty=Math.random()*400;
+
+x.beginPath();
+
+x.arc(
+tx,
+ty,
+4,
+0,
+Math.PI*2
+);
+
+x.fill();
+
+}
+
+
+/* pontos */
+
+x.font="25px Arial";
+
+x.fillText(
+"🏕️",
+180,
+300
+);
+
+x.fillText(
+"💧",
+300,
+90
+);
+
+x.fillText(
+"🐎",
+350,
+220
+);
+
+x.fillText(
+"⭐",
+520,
+180
+);
+
 }
 
 
@@ -2900,99 +2520,277 @@ function animate(){
    INTERFACE
 ========================================================= */
 
+function updateHUD(){
+
+document
+.getElementById("health")
+.style.width=
+(player.health/120*100)+"%";
+
+document
+.getElementById("healthText")
+.textContent=
+Math.floor(player.health)
++" / 120";
+
+document
+.getElementById("stamina")
+.style.width=
+player.stamina+"%";
+
+document
+.getElementById("staminaText")
+.textContent=
+Math.floor(player.stamina)
++" / 100";
+
+document
+.getElementById("horseStamina")
+.style.width=
+horse.stamina+"%";
+
+document
+.getElementById("horseText")
+.textContent=
+Math.floor(horse.stamina)
++" / 100";
+
+document
+.getElementById("quest")
+.textContent=
+"Progresso: "+
+quest+
+" / 3";
+
+}
+
+
+/* =========================================================
+   NOTIFICAÇÃO
+========================================================= */
+
+let notificationTimer;
+
 function showNotification(text){
 
-    const el =
-        document.getElementById(
-            "notification"
-        );
+const n=
+document.getElementById(
+"notification"
+);
 
-    el.textContent=text;
+n.textContent=text;
 
-    el.classList.add("show");
+n.classList.add("show");
 
-    clearTimeout(
-        window.notificationTimer
-    );
+clearTimeout(
+notificationTimer
+);
 
-    window.notificationTimer =
-        setTimeout(
-            ()=>{
-                el.classList.remove("show");
-            },
-            3000
-        );
-}
+notificationTimer=
+setTimeout(
+()=>{
+n.classList.remove("show");
+},
+2200
+);
 
-
-function closeScreens(){
-
-    document
-        .querySelectorAll(".screen")
-        .forEach(
-            s=>s.classList.remove("show")
-        );
-}
-
-
-function openMap(){
-
-    document
-        .getElementById("mapScreen")
-        .classList.add("show");
-}
-
-
-function openInventory(){
-
-    document
-        .getElementById("inventoryScreen")
-        .classList.add("show");
-}
-
-
-function showMission(){
-
-    document
-        .getElementById("missionScreen")
-        .classList.add("show");
-}
-
-
-function pauseGame(){
-
-    document
-        .getElementById("pauseScreen")
-        .classList.add("show");
 }
 
 
 /* =========================================================
-   RESIZE
+   JANELAS
 ========================================================= */
 
-function onResize(){
+function openWindow(id){
 
-    camera.aspect =
-        window.innerWidth/
-        window.innerHeight;
+closeWindows();
 
-    camera.updateProjectionMatrix();
+document
+.getElementById(id)
+.classList.add("show");
 
-    renderer.setSize(
-        window.innerWidth,
-        window.innerHeight
-    );
+if(id==="mapWindow")
+drawBigMap();
+
+}
+
+
+function closeWindows(){
+
+document
+.querySelectorAll(".screen")
+.forEach(
+x=>x.classList.remove("show")
+);
+
+}
+
+
+function pause(){
+
+openWindow(
+"pauseWindow"
+);
+
 }
 
 
 /* =========================================================
-   COMEÇO
+   DESENHO
 ========================================================= */
+
+function render(){
+
+drawGround();
+
+drawRiver();
+
+drawPath();
+
+drawWaterfall();
+
+drawCamp();
+
+
+/*
+ Ordenação simples:
+ objetos mais distantes
+ aparecem primeiro.
+*/
+
+const objects=[];
+
+for(const t of trees)
+objects.push({
+type:"tree",
+obj:t,
+distance:
+(t.x-player.x)**2+
+(t.y-player.y)**2
+});
+
+for(const r of rocks)
+objects.push({
+type:"rock",
+obj:r,
+distance:
+(r.x-player.x)**2+
+(r.y-player.y)**2
+});
+
+
+objects.sort(
+(a,b)=>b.distance-a.distance
+);
+
+
+/* limita objetos desenhados
+para manter FPS alto */
+
+let count=0;
+
+for(const o of objects){
+
+if(count>180)
+break;
+
+if(o.type==="tree")
+drawTree(o.obj);
+else
+drawRock(o.obj);
+
+count++;
+
+}
+
+
+drawAnimals();
+
+drawHorse();
+
+drawPlayer();
+
+drawNight();
+
+drawMiniMap();
+
+}
+
+
+/* =========================================================
+   LOOP
+========================================================= */
+
+let last=performance.now();
+
+function loop(now){
+
+let delta=
+(now-last)/16.67;
+
+last=now;
+
+if(delta>2)
+delta=2;
+
+
+updatePlayer();
+
+updateAnimals();
+
+updateTime();
+
+updateHUD();
+
+render();
+
+requestAnimationFrame(loop);
+
+}
+
+
+/* =========================================================
+   CARREGAMENTO
+========================================================= */
+
+let loading=0;
+
+const loadingTimer=
+setInterval(()=>{
+
+loading+=10;
+
+document
+.getElementById("loadfill")
+.style.width=
+loading+"%";
+
+if(loading>=100){
+
+clearInterval(
+loadingTimer
+);
+
+document
+.getElementById("loading")
+.style.display="none";
 
 showNotification(
-    "🌲 Bem-vindo à Floresta. Encontre o rio!"
+"🌲 Bem-vindo à floresta! Encontre o rio."
 );
+
+requestAnimationFrame(loop);
+
+}
+
+},60);
+
+
+/* =========================================================
+   INÍCIO
+========================================================= */
+
+updateHUD();
 
 </script>
 
