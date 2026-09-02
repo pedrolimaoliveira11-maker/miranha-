@@ -117,14 +117,15 @@ html,body{
 .bar div{
     width:100%;
     height:100%;
+    transition:width .15s linear;
 }
 
 .hp{
-    background:#d92727;
+    background:linear-gradient(90deg,#a11c1c,#e14343);
 }
 
 .stamina{
-    background:#1fc967;
+    background:linear-gradient(90deg,#0f8a49,#2fe084);
 }
 
 .barText{
@@ -206,6 +207,9 @@ html,body{
     right:30px;
     top:295px;
     padding:10px 15px;
+    display:flex;
+    align-items:center;
+    gap:6px;
 }
 
 #horseInfo{
@@ -378,6 +382,15 @@ html,body{
     border-radius:10px;
 }
 
+#fadeOverlay{
+    position:fixed;
+    inset:0;
+    background:black;
+    opacity:0;
+    pointer-events:none;
+    z-index:40;
+}
+
 @media(max-width:850px){
 
     #controls,
@@ -410,6 +423,7 @@ html,body{
 <body>
 
 <canvas id="canvas"></canvas>
+<div id="fadeOverlay"></div>
 
 <div id="hud">
 
@@ -556,7 +570,7 @@ MINIMAPA
 
 
 <div id="clock" class="panel">
-☀️ <span id="clockText">10:45</span>
+<span id="clockIcon">☀️</span> <span id="clockText">10:45</span>
 </div>
 
 
@@ -784,20 +798,21 @@ mini.getContext("2d");
 
 let W=0;
 let H=0;
+let DPR=Math.min(window.devicePixelRatio||1,2);
 
 
 function resize(){
 
-    W=
-        canvas.width=
-        window.innerWidth;
+    W=window.innerWidth;
+    H=window.innerHeight;
 
-    H=
-        canvas.height=
-        window.innerHeight;
+    canvas.width=W*DPR;
+    canvas.height=H*DPR;
+    ctx.setTransform(DPR,0,0,DPR,0,0);
 
-    mini.width=190;
-    mini.height=190;
+    mini.width=190*DPR;
+    mini.height=190*DPR;
+    mctx.setTransform(DPR,0,0,DPR,0,0);
 
 }
 
@@ -813,14 +828,18 @@ window.addEventListener(
 MUNDO
 ===================================================== */
 
-/*
-    O mundo é MUITO maior que a tela.
-
-    O jogador pode andar de
-    -5000 até +5000.
-*/
-
 const WORLD=5000;
+
+
+/* =====================================================
+CÂMERA (com suavização)
+===================================================== */
+
+const cam={
+    x:0,
+    y:300,
+    shake:0
+};
 
 
 /* =====================================================
@@ -835,8 +854,15 @@ const player={
     stamina:100,
 
     direction:0,
+    facing:1,
 
-    jump:0
+    jump:0,
+    jumpVel:0,
+    grounded:true,
+
+    walkCycle:0,
+    moving:false,
+    running:false
 };
 
 
@@ -850,7 +876,14 @@ const horse={
 
     stamina:100,
 
-    direction:0
+    direction:0,
+    facing:1,
+
+    walkCycle:0,
+    moving:false,
+    running:false,
+
+    breathe:0
 };
 
 
@@ -879,105 +912,99 @@ const waterfall={
 
 
 /* =====================================================
-ÁRVORES
+VEGETAÇÃO E OBJETOS DO MUNDO
 ===================================================== */
 
 const trees=[];
 
-
-/*
-    Geramos muitas árvores.
-
-    Elas ficam fixas no mundo.
-*/
-
 for(let i=0;i<700;i++){
 
-    let x=
-        Math.random()*WORLD*2-
-        WORLD;
+    let x=Math.random()*WORLD*2-WORLD;
+    let y=Math.random()*WORLD*2-WORLD;
 
-    let y=
-        Math.random()*WORLD*2-
-        WORLD;
-
-
-    /*
-        área inicial livre
-    */
-
-    if(
-        Math.abs(x)<300 &&
-        Math.abs(y)<300
-    ){
+    if(Math.abs(x)<300 && Math.abs(y)<300){
         i--;
         continue;
     }
 
-
     trees.push({
-
         x:x,
         y:y,
-
-        size:
-            .65+
-            Math.random()*.8
-
+        size:.65+Math.random()*.8,
+        kind:Math.random()<.35?"pine":"round",
+        sway:Math.random()*Math.PI*2,
+        tint:.85+Math.random()*.3
     });
 
 }
 
-
-/* =====================================================
-PEDRAS
-===================================================== */
 
 const rocks=[];
 
 for(let i=0;i<250;i++){
 
     rocks.push({
-
-        x:
-            Math.random()*WORLD*2-
-            WORLD,
-
-        y:
-            Math.random()*WORLD*2-
-            WORLD,
-
-        size:
-            3+
-            Math.random()*8
-
+        x:Math.random()*WORLD*2-WORLD,
+        y:Math.random()*WORLD*2-WORLD,
+        size:3+Math.random()*8,
+        rot:Math.random()*Math.PI
     });
 
 }
 
-
-/* =====================================================
-ARBUSTOS
-===================================================== */
 
 const bushes=[];
 
 for(let i=0;i<350;i++){
 
     bushes.push({
+        x:Math.random()*WORLD*2-WORLD,
+        y:Math.random()*WORLD*2-WORLD,
+        size:5+Math.random()*12,
+        sway:Math.random()*Math.PI*2
+    });
 
-        x:
-            Math.random()*WORLD*2-
-            WORLD,
+}
 
-        y:
-            Math.random()*WORLD*2-
-            WORLD,
 
-        size:
-            5+
-            Math.random()*12
+const flowers=[];
 
+for(let i=0;i<400;i++){
+
+    flowers.push({
+        x:Math.random()*WORLD*2-WORLD,
+        y:Math.random()*WORLD*2-WORLD,
+        color:["#e7d24a","#e15b7a","#f2f2f2","#7f6fe0"][Math.floor(Math.random()*4)],
+        sway:Math.random()*Math.PI*2
+    });
+
+}
+
+
+const grassTufts=[];
+
+for(let i=0;i<900;i++){
+
+    grassTufts.push({
+        x:Math.random()*WORLD*2-WORLD,
+        y:Math.random()*WORLD*2-WORLD,
+        sway:Math.random()*Math.PI*2,
+        h:6+Math.random()*8
+    });
+
+}
+
+
+const clouds=[];
+
+for(let i=0;i<14;i++){
+
+    clouds.push({
+        x:Math.random()*WORLD*2-WORLD,
+        y:-1200-Math.random()*800,
+        speed:.05+Math.random()*.08,
+        size:60+Math.random()*90,
+        depth:.3+Math.random()*.4
     });
 
 }
@@ -992,23 +1019,74 @@ const animals=[];
 for(let i=0;i<25;i++){
 
     animals.push({
-
-        x:
-            Math.random()*WORLD*2-
-            WORLD,
-
-        y:
-            Math.random()*WORLD*2-
-            WORLD,
-
-        dir:
-            Math.random()*Math.PI*2,
-
-        speed:
-            .15+
-            Math.random()*.25
-
+        x:Math.random()*WORLD*2-WORLD,
+        y:Math.random()*WORLD*2-WORLD,
+        dir:Math.random()*Math.PI*2,
+        speed:.15+Math.random()*.25,
+        walkCycle:Math.random()*10
     });
+
+}
+
+
+/* =====================================================
+PARTÍCULAS (poeira / folhas / respingos)
+===================================================== */
+
+const particles=[];
+
+function spawnParticle(x,y,type){
+
+    particles.push({
+        x:x,
+        y:y,
+        vx:(Math.random()-.5)*1.4,
+        vy:-Math.random()*.8-.2,
+        life:1,
+        type:type,
+        size:type==="dust"?(3+Math.random()*4):(2+Math.random()*3)
+    });
+
+}
+
+function updateParticles(){
+
+    for(let i=particles.length-1;i>=0;i--){
+
+        const p=particles[i];
+
+        p.x+=p.vx;
+        p.y+=p.vy;
+        p.vy+=.02;
+        p.life-=.02;
+
+        if(p.life<=0)
+            particles.splice(i,1);
+
+    }
+
+}
+
+function drawParticles(){
+
+    for(const p of particles){
+
+        const s=screen(p.x,p.y);
+
+        ctx.globalAlpha=Math.max(0,p.life);
+
+        ctx.fillStyle=
+            p.type==="dust"
+            ?"#c9b98a"
+            :"#e8f6f8";
+
+        ctx.beginPath();
+        ctx.arc(s.x,s.y,p.size,0,Math.PI*2);
+        ctx.fill();
+
+        ctx.globalAlpha=1;
+
+    }
 
 }
 
@@ -1091,6 +1169,35 @@ function distance(a,b){
 
 
 /* =====================================================
+COLISÃO SIMPLES COM ÁRVORES
+===================================================== */
+
+function resolveTreeCollision(entity,radius){
+
+    for(const t of trees){
+
+        const minDist=t.size*16+radius;
+
+        const dx=entity.x-t.x;
+        const dy=entity.y-t.y;
+
+        const d=Math.hypot(dx,dy);
+
+        if(d<minDist && d>0.01){
+
+            const push=(minDist-d);
+
+            entity.x+=(dx/d)*push;
+            entity.y+=(dy/d)*push;
+
+        }
+
+    }
+
+}
+
+
+/* =====================================================
 MOVIMENTO
 ===================================================== */
 
@@ -1100,49 +1207,34 @@ function updateMovement(){
     let dy=0;
 
 
-    if(
-        keys["KeyW"]||
-        keys["ArrowUp"]
-    )
+    if(keys["KeyW"]||keys["ArrowUp"])
         dy=-1;
 
-
-    if(
-        keys["KeyS"]||
-        keys["ArrowDown"]
-    )
+    if(keys["KeyS"]||keys["ArrowDown"])
         dy=1;
 
-
-    if(
-        keys["KeyA"]||
-        keys["ArrowLeft"]
-    )
+    if(keys["KeyA"]||keys["ArrowLeft"])
         dx=-1;
 
-
-    if(
-        keys["KeyD"]||
-        keys["ArrowRight"]
-    )
+    if(keys["KeyD"]||keys["ArrowRight"])
         dx=1;
 
 
-    if(dx===0 && dy===0){
+    const active=(dx!==0||dy!==0);
 
-        player.stamina=
-            Math.min(
-                100,
-                player.stamina+.35
-            );
+    player.moving=active && !mounted;
+    horse.moving=active && mounted;
 
+
+    if(!active){
+
+        player.stamina=Math.min(100,player.stamina+.35);
         return;
 
     }
 
 
-    const len=
-        Math.hypot(dx,dy);
+    const len=Math.hypot(dx,dy);
 
     dx/=len;
     dy/=len;
@@ -1157,23 +1249,20 @@ function updateMovement(){
 
         let speed=5.2;
 
+        horse.running=false;
 
-        if(
-            running &&
-            horse.stamina>0
-        ){
+        if(running && horse.stamina>0){
 
             speed=8.5;
-
             horse.stamina-=.75;
+            horse.running=true;
+
+            if(Math.random()<.3)
+                spawnParticle(horse.x-Math.cos(horse.direction)*30,horse.y+20,"dust");
 
         }else{
 
-            horse.stamina=
-                Math.min(
-                    100,
-                    horse.stamina+.2
-                );
+            horse.stamina=Math.min(100,horse.stamina+.2);
 
         }
 
@@ -1181,9 +1270,12 @@ function updateMovement(){
         horse.x+=dx*speed;
         horse.y+=dy*speed;
 
-        horse.direction=
-            Math.atan2(dy,dx);
+        horse.direction=Math.atan2(dy,dx);
+        horse.facing=dx<0?-1:(dx>0?1:horse.facing);
 
+        horse.walkCycle+=speed*.12;
+
+        resolveTreeCollision(horse,55);
 
         player.x=horse.x;
         player.y=horse.y;
@@ -1192,23 +1284,17 @@ function updateMovement(){
 
         let speed=3;
 
+        player.running=false;
 
-        if(
-            running &&
-            player.stamina>0
-        ){
+        if(running && player.stamina>0){
 
             speed=5.2;
-
             player.stamina-=.7;
+            player.running=true;
 
         }else{
 
-            player.stamina=
-                Math.min(
-                    100,
-                    player.stamina+.4
-                );
+            player.stamina=Math.min(100,player.stamina+.4);
 
         }
 
@@ -1216,34 +1302,89 @@ function updateMovement(){
         player.x+=dx*speed;
         player.y+=dy*speed;
 
+        player.direction=Math.atan2(dy,dx);
+        player.facing=dx<0?-1:(dx>0?1:player.facing);
 
-        player.direction=
-            Math.atan2(dy,dx);
+        player.walkCycle+=speed*.15;
+
+        resolveTreeCollision(player,20);
 
     }
 
 
+    player.x=Math.max(-WORLD,Math.min(WORLD,player.x));
+    player.y=Math.max(-WORLD,Math.min(WORLD,player.y));
+
+}
+
+
+/* =====================================================
+CICLO DE DIA / NOITE
+===================================================== */
+
+let minutes=10*60+45;
+
+
+function daylightFactor(){
+
     /*
-        LIMITES DO MAPA
+        0 = meia-noite, 1 = meio-dia
+        curva suave usando seno
     */
 
-    player.x=
-        Math.max(
-            -WORLD,
-            Math.min(
-                WORLD,
-                player.x
-            )
-        );
+    const t=(minutes/1440)*Math.PI*2;
 
-    player.y=
-        Math.max(
-            -WORLD,
-            Math.min(
-                WORLD,
-                player.y
-            )
-        );
+    return (Math.cos(t-Math.PI)+1)/2;
+
+}
+
+
+function skyColors(){
+
+    const d=daylightFactor();
+
+    function mix(c1,c2,t){
+
+        const p=(a,b)=>Math.round(a+(b-a)*t);
+
+        return `rgb(${p(c1[0],c2[0])},${p(c1[1],c2[1])},${p(c1[2],c2[2])})`;
+
+    }
+
+    const night=[[10,14,28],[28,30,48],[26,38,30]];
+    const dawn=[[255,176,120],[255,214,170],[120,110,70]];
+    const day=[[119,169,206],[184,211,212],[119,146,107]];
+
+
+    let top,mid,low;
+
+    if(d<.25){
+
+        const t=d/.25;
+
+        top=mix(night[0],dawn[0],t);
+        mid=mix(night[1],dawn[1],t);
+        low=mix(night[2],dawn[2],t);
+
+    }else if(d<.75){
+
+        const t=(d-.25)/.5;
+
+        top=mix(dawn[0],day[0],t);
+        mid=mix(dawn[1],day[1],t);
+        low=mix(dawn[2],day[2],t);
+
+    }else{
+
+        const t=(d-.75)/.25;
+
+        top=mix(day[0],night[0],t);
+        mid=mix(day[1],night[1],t);
+        low=mix(day[2],night[2],t);
+
+    }
+
+    return {top,mid,low,d};
 
 }
 
@@ -1252,20 +1393,19 @@ function updateMovement(){
 CÂMERA
 ===================================================== */
 
+function updateCamera(){
+
+    cam.x+=(player.x-cam.x)*.14;
+    cam.y+=(player.y-cam.y)*.14;
+
+}
+
+
 function screen(x,y){
 
     return {
-
-        x:
-            W/2+
-            x-
-            player.x,
-
-        y:
-            H/2+
-            y-
-            player.y
-
+        x:W/2+x-cam.x,
+        y:H/2+y-cam.y
     };
 
 }
@@ -1275,250 +1415,210 @@ function screen(x,y){
 CÉU
 ===================================================== */
 
+let sky={top:"#77a9ce",mid:"#b8d3d4",low:"#77926b",d:1};
+
+
 function drawSky(){
 
-    /*
-        Gradiente para dar aparência
-        de céu realista.
-    */
+    sky=skyColors();
 
-    const g=
-        ctx.createLinearGradient(
-            0,0,
-            0,H
-        );
+    const g=ctx.createLinearGradient(0,0,0,H);
 
-
-    g.addColorStop(
-        0,
-        "#77a9ce"
-    );
-
-    g.addColorStop(
-        .48,
-        "#b8d3d4"
-    );
-
-    g.addColorStop(
-        .5,
-        "#77926b"
-    );
-
-    g.addColorStop(
-        1,
-        "#304d32"
-    );
-
+    g.addColorStop(0,sky.top);
+    g.addColorStop(.48,sky.mid);
+    g.addColorStop(.5,sky.low);
+    g.addColorStop(1,"#304d32");
 
     ctx.fillStyle=g;
+    ctx.fillRect(0,0,W,H);
 
-    ctx.fillRect(
-        0,0,
-        W,H
-    );
+
+    /*
+        estrelas à noite
+    */
+
+    if(sky.d<.3){
+
+        const starAlpha=1-sky.d/.3;
+
+        ctx.fillStyle=`rgba(255,255,255,${starAlpha*.8})`;
+
+        for(let i=0;i<90;i++){
+
+            const sx=(i*137.5)%W;
+            const sy=(i*79.3)%(H*.45);
+
+            ctx.fillRect(sx,sy,1.6,1.6);
+
+        }
+
+    }
+
+
+    /*
+        sol / lua seguindo o horizonte
+    */
+
+    const angle=(minutes/1440)*Math.PI*2-Math.PI/2;
+
+    const sunX=W/2+Math.cos(angle)*W*.6;
+    const sunY=H*.5+Math.sin(angle)*H*.55;
+
+    if(sunY<H*.55){
+
+        const isDay=sky.d>.5;
+
+        ctx.fillStyle=isDay?"rgba(255,244,214,.95)":"rgba(210,220,240,.9)";
+
+        ctx.beginPath();
+        ctx.arc(sunX,sunY,isDay?34:26,0,Math.PI*2);
+        ctx.fill();
+
+        ctx.fillStyle=isDay?"rgba(255,244,214,.25)":"rgba(210,220,240,.2)";
+
+        ctx.beginPath();
+        ctx.arc(sunX,sunY,isDay?60:44,0,Math.PI*2);
+        ctx.fill();
+
+    }
 
 }
 
 
 /* =====================================================
-MONTANHAS FIXAS
+NUVENS
 ===================================================== */
 
-/*
-    IMPORTANTE:
+function updateClouds(){
 
-    As montanhas usam SOMENTE
-    a posição da tela.
+    for(const c of clouds){
 
-    Elas NÃO dependem de player.x/player.y.
+        c.x+=c.speed;
 
-    Portanto ficam paradas no horizonte.
-*/
+        if(c.x>WORLD+400)
+            c.x=-WORLD-400;
+
+    }
+
+}
+
+
+function drawClouds(){
+
+    ctx.fillStyle=
+        sky.d<.3
+        ?"rgba(60,65,90,.55)"
+        :"rgba(255,255,255,.85)";
+
+    for(const c of clouds){
+
+        const p=screen(c.x*c.depth,c.y);
+
+        if(p.x<-200||p.x>W+200)
+            continue;
+
+        for(let i=0;i<4;i++){
+
+            ctx.beginPath();
+            ctx.ellipse(
+                p.x+i*c.size*.5,
+                p.y+Math.sin(i)*8,
+                c.size*.5,
+                c.size*.3,
+                0,0,Math.PI*2
+            );
+            ctx.fill();
+
+        }
+
+    }
+
+}
+
+
+/* =====================================================
+MONTANHAS (paralaxe leve)
+===================================================== */
 
 function drawMountains(){
 
-    /*
-        montanhas distantes
-    */
+    const parX=cam.x*.02;
 
     ctx.fillStyle="#405b59";
 
     ctx.beginPath();
-
-    ctx.moveTo(
-        0,
-        H*.46
-    );
-
-    ctx.lineTo(
-        W*.10,
-        H*.32
-    );
-
-    ctx.lineTo(
-        W*.19,
-        H*.43
-    );
-
-    ctx.lineTo(
-        W*.32,
-        H*.25
-    );
-
-    ctx.lineTo(
-        W*.44,
-        H*.43
-    );
-
-    ctx.lineTo(
-        W*.58,
-        H*.29
-    );
-
-    ctx.lineTo(
-        W*.72,
-        H*.43
-    );
-
-    ctx.lineTo(
-        W*.84,
-        H*.27
-    );
-
-    ctx.lineTo(
-        W,
-        H*.40
-    );
-
-    ctx.lineTo(
-        W,
-        H*.57
-    );
-
-    ctx.lineTo(
-        0,
-        H*.57
-    );
-
+    ctx.moveTo(-parX%W-W,H*.46);
+    ctx.lineTo(-parX%W-W+W*.10,H*.32);
+    ctx.lineTo(-parX%W-W+W*.19,H*.43);
+    ctx.lineTo(-parX%W-W+W*.32,H*.25);
+    ctx.lineTo(-parX%W-W+W*.44,H*.43);
+    ctx.lineTo(-parX%W-W+W*.58,H*.29);
+    ctx.lineTo(-parX%W-W+W*.72,H*.43);
+    ctx.lineTo(-parX%W-W+W*.84,H*.27);
+    ctx.lineTo(-parX%W-W+W,H*.40);
+    ctx.lineTo(-parX%W-W+W,H*.57);
+    ctx.lineTo(-parX%W-W,H*.57);
     ctx.closePath();
+    ctx.fill();
 
+    ctx.beginPath();
+    ctx.moveTo(-parX%W,H*.46);
+    ctx.lineTo(-parX%W+W*.10,H*.32);
+    ctx.lineTo(-parX%W+W*.19,H*.43);
+    ctx.lineTo(-parX%W+W*.32,H*.25);
+    ctx.lineTo(-parX%W+W*.44,H*.43);
+    ctx.lineTo(-parX%W+W*.58,H*.29);
+    ctx.lineTo(-parX%W+W*.72,H*.43);
+    ctx.lineTo(-parX%W+W*.84,H*.27);
+    ctx.lineTo(-parX%W+W,H*.40);
+    ctx.lineTo(-parX%W+W,H*.57);
+    ctx.lineTo(-parX%W,H*.57);
+    ctx.closePath();
     ctx.fill();
 
 
-    /*
-        montanhas próximas
-    */
+    const parX2=cam.x*.05;
 
     ctx.fillStyle="#344b45";
 
-    ctx.beginPath();
-
-    ctx.moveTo(
-        0,
-        H*.54
-    );
-
-    ctx.lineTo(
-        W*.12,
-        H*.39
-    );
-
-    ctx.lineTo(
-        W*.23,
-        H*.50
-    );
-
-    ctx.lineTo(
-        W*.40,
-        H*.34
-    );
-
-    ctx.lineTo(
-        W*.55,
-        H*.49
-    );
-
-    ctx.lineTo(
-        W*.70,
-        H*.37
-    );
-
-    ctx.lineTo(
-        W*.87,
-        H*.48
-    );
-
-    ctx.lineTo(
-        W,
-        H*.35
-    );
-
-    ctx.lineTo(
-        W,
-        H*.60
-    );
-
-    ctx.lineTo(
-        0,
-        H*.60
-    );
-
-    ctx.closePath();
-
-    ctx.fill();
-
-
-    /*
-        neve nas montanhas
-    */
-
-    ctx.fillStyle=
-        "rgba(225,235,230,.75)";
-
-
-    function snow(x,y,s){
+    function nearRange(offset){
 
         ctx.beginPath();
-
-        ctx.moveTo(
-            x,
-            y
-        );
-
-        ctx.lineTo(
-            x-s*.15,
-            y+s*.22
-        );
-
-        ctx.lineTo(
-            x+s*.15,
-            y+s*.22
-        );
-
+        ctx.moveTo(offset,H*.54);
+        ctx.lineTo(offset+W*.12,H*.39);
+        ctx.lineTo(offset+W*.23,H*.50);
+        ctx.lineTo(offset+W*.40,H*.34);
+        ctx.lineTo(offset+W*.55,H*.49);
+        ctx.lineTo(offset+W*.70,H*.37);
+        ctx.lineTo(offset+W*.87,H*.48);
+        ctx.lineTo(offset+W,H*.35);
+        ctx.lineTo(offset+W,H*.60);
+        ctx.lineTo(offset,H*.60);
         ctx.closePath();
-
         ctx.fill();
 
     }
 
+    nearRange(-parX2%W-W);
+    nearRange(-parX2%W);
 
-    snow(
-        W*.32,
-        H*.25,
-        110
-    );
 
-    snow(
-        W*.58,
-        H*.29,
-        100
-    );
+    ctx.fillStyle="rgba(225,235,230,.75)";
 
-    snow(
-        W*.84,
-        H*.27,
-        120
-    );
+    function snow(x,y,s){
+
+        ctx.beginPath();
+        ctx.moveTo(x,y);
+        ctx.lineTo(x-s*.15,y+s*.22);
+        ctx.lineTo(x+s*.15,y+s*.22);
+        ctx.closePath();
+        ctx.fill();
+
+    }
+
+    snow(-parX%W+W*.32,H*.25,110);
+    snow(-parX%W+W*.58,H*.29,100);
+    snow(-parX%W+W*.84,H*.27,120);
 
 }
 
@@ -1531,43 +1631,38 @@ function drawGround(){
 
     ctx.fillStyle="#55764c";
 
-    ctx.fillRect(
-        0,
-        H*.52,
-        W,
-        H
-    );
+    ctx.fillRect(0,H*.52,W,H);
 
 
-    /*
-        manchas naturais
-    */
-
-    ctx.fillStyle=
-        "rgba(25,65,28,.15)";
-
+    ctx.fillStyle="rgba(25,65,28,.15)";
 
     for(let i=0;i<50;i++){
 
-        const x=
-            (i*173)%W;
-
-        const y=
-            H*.53+
-            ((i*97)%Math.max(1,H*.45));
+        const x=(i*173-cam.x*.6)%(W+200)-100;
+        const y=H*.53+((i*97)%Math.max(1,H*.45));
 
         ctx.beginPath();
+        ctx.ellipse(x,y,25,12,0,0,Math.PI*2);
+        ctx.fill();
 
-        ctx.ellipse(
-            x,
-            y,
-            25,
-            12,
-            0,
-            0,
-            Math.PI*2
-        );
+    }
 
+
+    /*
+        sombra de nuvens passando no chão
+    */
+
+    ctx.fillStyle="rgba(20,35,20,.06)";
+
+    for(const c of clouds){
+
+        const p=screen(c.x,0);
+
+        if(p.x<-200||p.x>W+200)
+            continue;
+
+        ctx.beginPath();
+        ctx.ellipse(p.x,H*.7,c.size*.6,c.size*.2,0,0,Math.PI*2);
         ctx.fill();
 
     }
@@ -1576,78 +1671,127 @@ function drawGround(){
 
 
 /* =====================================================
-RIO
+GRAMA (tufos com vento)
 ===================================================== */
+
+let windTime=0;
+
+function drawGrassTufts(){
+
+    ctx.strokeStyle="rgba(35,70,32,.55)";
+    ctx.lineWidth=2;
+
+    for(const g of grassTufts){
+
+        const p=screen(g.x,g.y);
+
+        if(p.x<-20||p.x>W+20||p.y<H*.5||p.y>H+20)
+            continue;
+
+        const sway=Math.sin(windTime+g.sway)*4;
+
+        ctx.beginPath();
+        ctx.moveTo(p.x-4,p.y);
+        ctx.quadraticCurveTo(p.x-2+sway,p.y-g.h*.6,p.x+sway,p.y-g.h);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(p.x+4,p.y);
+        ctx.quadraticCurveTo(p.x+2+sway,p.y-g.h*.6,p.x+sway,p.y-g.h);
+        ctx.stroke();
+
+    }
+
+}
+
+
+function drawFlowers(){
+
+    for(const f of flowers){
+
+        const p=screen(f.x,f.y);
+
+        if(p.x<-10||p.x>W+10||p.y<H*.5||p.y>H+10)
+            continue;
+
+        const sway=Math.sin(windTime*1.3+f.sway)*2;
+
+        ctx.fillStyle="#3f6236";
+        ctx.fillRect(p.x-1,p.y-6,2,6);
+
+        ctx.fillStyle=f.color;
+
+        for(let a=0;a<5;a++){
+
+            const ang=a/5*Math.PI*2;
+
+            ctx.beginPath();
+            ctx.arc(
+                p.x+Math.cos(ang)*3+sway,
+                p.y-7+Math.sin(ang)*3,
+                2,0,Math.PI*2
+            );
+            ctx.fill();
+
+        }
+
+        ctx.fillStyle="#e8c94a";
+
+        ctx.beginPath();
+        ctx.arc(p.x+sway,p.y-7,1.6,0,Math.PI*2);
+        ctx.fill();
+
+    }
+
+}
+
+
+/* =====================================================
+RIO / ÁGUA ANIMADA
+===================================================== */
+
+let waterTime=0;
+
 
 function drawRiver(){
 
-    const p=
-        screen(
-            river.x,
-            0
-        );
-
-
-    /*
-        rio largo
-    */
+    const p=screen(river.x,0);
 
     ctx.fillStyle="#3c8197";
 
-    ctx.fillRect(
-        p.x-55,
-        H*.48,
-        110,
-        H*.55
-    );
-
-
-    /*
-        margem esquerda
-    */
+    ctx.fillRect(p.x-55,H*.48,110,H*.55);
 
     ctx.fillStyle="#806b48";
-
-    ctx.fillRect(
-        p.x-68,
-        H*.48,
-        13,
-        H*.55
-    );
+    ctx.fillRect(p.x-68,H*.48,13,H*.55);
+    ctx.fillRect(p.x+55,H*.48,13,H*.55);
 
 
-    /*
-        margem direita
-    */
+    ctx.strokeStyle="rgba(210,240,245,.35)";
+    ctx.lineWidth=3;
 
-    ctx.fillRect(
-        p.x+55,
-        H*.48,
-        13,
-        H*.55
-    );
+    for(let y=H*.53;y<H;y+=35){
+
+        const wobble=Math.sin(waterTime*2+y*.05)*8;
+
+        ctx.beginPath();
+        ctx.moveTo(p.x-35+wobble,y);
+        ctx.lineTo(p.x+35+wobble,y);
+        ctx.stroke();
+
+    }
 
 
     /*
-        reflexos
+        brilho do sol na água
     */
 
-    ctx.fillStyle=
-        "rgba(210,240,245,.28)";
+    ctx.fillStyle=`rgba(255,255,255,${.08+Math.max(0,sky.d)*.15})`;
 
+    for(let i=0;i<6;i++){
 
-    for(
-        let y=H*.53;
-        y<H;
-        y+=35
-    ){
+        const y=H*.55+((i*70+waterTime*40)%(H*.4));
 
-        ctx.fillRect(
-            p.x-35,
-            y,
-            70,
-            3
-        );
+        ctx.fillRect(p.x-20,y,40,2);
 
     }
 
@@ -1660,56 +1804,24 @@ CAMINHO
 
 function drawPath(){
 
-    const start=
-        screen(
-            0,
-            300
-        );
-
-    const end=
-        screen(
-            camp.x,
-            camp.y
-        );
-
+    const start=screen(0,300);
+    const end=screen(camp.x,camp.y);
 
     ctx.strokeStyle="#765c3d";
-
     ctx.lineWidth=55;
-
     ctx.lineCap="round";
 
     ctx.beginPath();
-
-    ctx.moveTo(
-        start.x,
-        start.y
-    );
-
-    ctx.lineTo(
-        end.x,
-        end.y
-    );
-
+    ctx.moveTo(start.x,start.y);
+    ctx.lineTo(end.x,end.y);
     ctx.stroke();
 
-
     ctx.strokeStyle="#9c8055";
-
     ctx.lineWidth=38;
 
     ctx.beginPath();
-
-    ctx.moveTo(
-        start.x,
-        start.y
-    );
-
-    ctx.lineTo(
-        end.x,
-        end.y
-    );
-
+    ctx.moveTo(start.x,start.y);
+    ctx.lineTo(end.x,end.y);
     ctx.stroke();
 
 }
@@ -1721,129 +1833,68 @@ function drawPath(){
 
 function drawTree(t){
 
-    const p=
-        screen(
-            t.x,
-            t.y
-        );
+    const p=screen(t.x,t.y);
 
-
-    if(
-        p.x<-100||
-        p.x>W+100||
-        p.y<-180||
-        p.y>H+100
-    )
+    if(p.x<-100||p.x>W+100||p.y<-220||p.y>H+100)
         return;
 
-
     const s=t.size;
+    const sway=Math.sin(windTime+t.sway)*3*s;
+
+    const shade=sky.d;
+    const lightAdj=.55+shade*.45;
 
 
-    /*
-        sombra
-    */
-
-    ctx.fillStyle=
-        "rgba(0,0,0,.22)";
-
+    ctx.fillStyle="rgba(0,0,0,.22)";
     ctx.beginPath();
-
-    ctx.ellipse(
-        p.x,
-        p.y+28*s,
-        28*s,
-        10*s,
-        0,
-        0,
-        Math.PI*2
-    );
-
+    ctx.ellipse(p.x+8,p.y+28*s,28*s,10*s,0,0,Math.PI*2);
     ctx.fill();
 
-
-    /*
-        tronco
-    */
 
     ctx.fillStyle="#533721";
-
-    ctx.fillRect(
-        p.x-7*s,
-        p.y-25*s,
-        14*s,
-        55*s
-    );
+    ctx.fillRect(p.x-7*s,p.y-25*s,14*s,55*s);
 
 
-    /*
-        copa escura
-    */
+    if(t.kind==="pine"){
 
-    ctx.fillStyle="#173b24";
+        ctx.fillStyle=`rgba(20,55,30,${lightAdj})`;
 
-    ctx.beginPath();
+        for(let layer=0;layer<3;layer++){
 
-    ctx.arc(
-        p.x,
-        p.y-50*s,
-        37*s,
-        0,
-        Math.PI*2
-    );
+            const ly=p.y-40*s-layer*22*s;
+            const lw=(34-layer*7)*s;
 
-    ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(p.x+sway*.3,ly-24*s);
+            ctx.lineTo(p.x-lw+sway,ly);
+            ctx.lineTo(p.x+lw+sway,ly);
+            ctx.closePath();
+            ctx.fill();
 
+        }
 
-    /*
-        copa média
-    */
+    }else{
 
-    ctx.fillStyle="#24552c";
+        ctx.fillStyle="#173b24";
+        ctx.beginPath();
+        ctx.arc(p.x+sway,p.y-50*s,37*s,0,Math.PI*2);
+        ctx.fill();
 
-    ctx.beginPath();
+        ctx.fillStyle=`rgba(36,85,44,${lightAdj})`;
+        ctx.beginPath();
+        ctx.arc(p.x-21*s+sway,p.y-32*s,27*s,0,Math.PI*2);
+        ctx.fill();
 
-    ctx.arc(
-        p.x-21*s,
-        p.y-32*s,
-        27*s,
-        0,
-        Math.PI*2
-    );
+        ctx.beginPath();
+        ctx.arc(p.x+21*s+sway,p.y-32*s,27*s,0,Math.PI*2);
+        ctx.fill();
 
-    ctx.fill();
+        ctx.fillStyle=`rgba(52,113,58,${lightAdj})`;
+        ctx.beginPath();
+        ctx.arc(p.x-12*s+sway,p.y-52*s,18*s,0,Math.PI*2);
+        ctx.fill();
 
-
-    ctx.beginPath();
-
-    ctx.arc(
-        p.x+21*s,
-        p.y-32*s,
-        27*s,
-        0,
-        Math.PI*2
-    );
-
-    ctx.fill();
-
-
-    /*
-        parte iluminada
-    */
-
-    ctx.fillStyle="#34713a";
-
-    ctx.beginPath();
-
-    ctx.arc(
-        p.x-12*s,
-        p.y-52*s,
-        18*s,
-        0,
-        Math.PI*2
-    );
-
-    ctx.fill();
+    }
 
 }
 
@@ -1854,49 +1905,21 @@ ARBUSTOS
 
 function drawBush(b){
 
-    const p=
-        screen(
-            b.x,
-            b.y
-        );
+    const p=screen(b.x,b.y);
 
-
-    if(
-        p.x<-40||
-        p.x>W+40||
-        p.y<-40||
-        p.y>H+40
-    )
+    if(p.x<-40||p.x>W+40||p.y<-40||p.y>H+40)
         return;
 
+    const sway=Math.sin(windTime+b.sway)*2;
 
     ctx.fillStyle="#245b2e";
-
     ctx.beginPath();
-
-    ctx.arc(
-        p.x,
-        p.y,
-        b.size,
-        0,
-        Math.PI*2
-    );
-
+    ctx.arc(p.x+sway,p.y,b.size,0,Math.PI*2);
     ctx.fill();
 
-
     ctx.fillStyle="#34713a";
-
     ctx.beginPath();
-
-    ctx.arc(
-        p.x-5,
-        p.y-4,
-        b.size*.55,
-        0,
-        Math.PI*2
-    );
-
+    ctx.arc(p.x-5+sway,p.y-4,b.size*.55,0,Math.PI*2);
     ctx.fill();
 
 }
@@ -1908,54 +1931,26 @@ PEDRA
 
 function drawRock(r){
 
-    const p=
-        screen(
-            r.x,
-            r.y
-        );
+    const p=screen(r.x,r.y);
 
-
-    if(
-        p.x<-30||
-        p.x>W+30||
-        p.y<-30||
-        p.y>H+30
-    )
+    if(p.x<-30||p.x>W+30||p.y<-30||p.y>H+30)
         return;
 
+    ctx.save();
+    ctx.translate(p.x,p.y);
+    ctx.rotate(r.rot);
 
     ctx.fillStyle="#656861";
-
     ctx.beginPath();
-
-    ctx.ellipse(
-        p.x,
-        p.y,
-        r.size*1.5,
-        r.size,
-        -.15,
-        0,
-        Math.PI*2
-    );
-
+    ctx.ellipse(0,0,r.size*1.5,r.size,0,0,Math.PI*2);
     ctx.fill();
-
 
     ctx.fillStyle="#878b82";
-
     ctx.beginPath();
-
-    ctx.ellipse(
-        p.x-r.size*.3,
-        p.y-r.size*.3,
-        r.size*.6,
-        r.size*.35,
-        -.15,
-        0,
-        Math.PI*2
-    );
-
+    ctx.ellipse(-r.size*.3,-r.size*.3,r.size*.6,r.size*.35,0,0,Math.PI*2);
     ctx.fill();
+
+    ctx.restore();
 
 }
 
@@ -1968,16 +1963,10 @@ function updateAnimals(){
 
     for(const a of animals){
 
-        a.dir+=
-            (Math.random()-.5)*.02;
-
-        a.x+=
-            Math.cos(a.dir)*
-            a.speed;
-
-        a.y+=
-            Math.sin(a.dir)*
-            a.speed;
+        a.dir+=(Math.random()-.5)*.02;
+        a.x+=Math.cos(a.dir)*a.speed;
+        a.y+=Math.sin(a.dir)*a.speed;
+        a.walkCycle+=a.speed*.3;
 
     }
 
@@ -1988,78 +1977,37 @@ function drawAnimals(){
 
     for(const a of animals){
 
-        const p=
-            screen(
-                a.x,
-                a.y
-            );
+        const p=screen(a.x,a.y);
 
-
-        if(
-            p.x<-50||
-            p.x>W+50||
-            p.y<-50||
-            p.y>H+50
-        )
+        if(p.x<-50||p.x>W+50||p.y<-50||p.y>H+50)
             continue;
 
+        const bob=Math.sin(a.walkCycle)*1.5;
+
+        ctx.fillStyle="rgba(0,0,0,.2)";
+        ctx.beginPath();
+        ctx.ellipse(p.x,p.y+11,18,5,0,0,Math.PI*2);
+        ctx.fill();
 
         ctx.fillStyle="#705034";
-
         ctx.beginPath();
-
-        ctx.ellipse(
-            p.x,
-            p.y,
-            18,
-            9,
-            0,
-            0,
-            Math.PI*2
-        );
-
+        ctx.ellipse(p.x,p.y+bob,18,9,0,0,Math.PI*2);
         ctx.fill();
 
-
         ctx.beginPath();
-
-        ctx.arc(
-            p.x+16,
-            p.y-5,
-            7,
-            0,
-            Math.PI*2
-        );
-
+        ctx.arc(p.x+16,p.y-5+bob,7,0,Math.PI*2);
         ctx.fill();
-
 
         ctx.strokeStyle="#513921";
-
         ctx.lineWidth=3;
 
+        const legSwing=Math.sin(a.walkCycle)*5;
+
         ctx.beginPath();
-
-        ctx.moveTo(
-            p.x-8,
-            p.y+6
-        );
-
-        ctx.lineTo(
-            p.x-11,
-            p.y+17
-        );
-
-        ctx.moveTo(
-            p.x+8,
-            p.y+6
-        );
-
-        ctx.lineTo(
-            p.x+11,
-            p.y+17
-        );
-
+        ctx.moveTo(p.x-8,p.y+6+bob);
+        ctx.lineTo(p.x-11+legSwing,p.y+17);
+        ctx.moveTo(p.x+8,p.y+6+bob);
+        ctx.lineTo(p.x+11-legSwing,p.y+17);
         ctx.stroke();
 
     }
@@ -2068,38 +2016,55 @@ function drawAnimals(){
 
 
 /* =====================================================
-CAVALO
+CAVALO (com animação de galope)
 ===================================================== */
 
 function drawHorse(){
 
-    const p=
-        screen(
-            horse.x,
-            horse.y
-        );
+    const p=screen(horse.x,horse.y);
+    const facing=horse.facing;
+
+    const gait=horse.moving
+        ?Math.sin(horse.walkCycle)
+        :Math.sin(horse.breathe)*.12;
+
+    const bodyBob=horse.moving?Math.abs(Math.sin(horse.walkCycle*2))*3:Math.sin(horse.breathe)*1;
+
+    horse.breathe+=.03;
+
+
+    ctx.save();
+    ctx.translate(p.x,p.y-bodyBob);
+    ctx.scale(facing,1);
+
+
+    ctx.fillStyle="rgba(0,0,0,.3)";
+    ctx.beginPath();
+    ctx.ellipse(0,25+bodyBob,48,12,0,0,Math.PI*2);
+    ctx.fill();
 
 
     /*
-        sombra
+        pernas traseiras (2) com galope
     */
 
-    ctx.fillStyle=
-        "rgba(0,0,0,.3)";
+    ctx.strokeStyle="#4b2a18";
+    ctx.lineWidth=8;
+    ctx.lineCap="round";
+
+    const backSwing=gait*16;
 
     ctx.beginPath();
+    ctx.moveTo(-23,12);
+    ctx.lineTo(-23-backSwing*.4,30);
+    ctx.lineTo(-27-backSwing,48);
+    ctx.stroke();
 
-    ctx.ellipse(
-        p.x,
-        p.y+25,
-        48,
-        12,
-        0,
-        0,
-        Math.PI*2
-    );
-
-    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(-14,12);
+    ctx.lineTo(-14+backSwing*.4,30);
+    ctx.lineTo(-18+backSwing,48);
+    ctx.stroke();
 
 
     /*
@@ -2107,20 +2072,35 @@ function drawHorse(){
     */
 
     ctx.fillStyle="#75451f";
+    ctx.beginPath();
+    ctx.ellipse(0,0,43,23,0,0,Math.PI*2);
+    ctx.fill();
+
+    ctx.fillStyle="rgba(255,255,255,.08)";
+    ctx.beginPath();
+    ctx.ellipse(-8,-10,30,10,0,0,Math.PI*2);
+    ctx.fill();
+
+
+    /*
+        pernas dianteiras (2) com galope
+    */
+
+    const frontSwing=-gait*16;
+
+    ctx.strokeStyle="#4b2a18";
 
     ctx.beginPath();
+    ctx.moveTo(20,12);
+    ctx.lineTo(20+frontSwing*.4,30);
+    ctx.lineTo(25+frontSwing,48);
+    ctx.stroke();
 
-    ctx.ellipse(
-        p.x,
-        p.y,
-        43,
-        23,
-        0,
-        0,
-        Math.PI*2
-    );
-
-    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(29,12);
+    ctx.lineTo(29-frontSwing*.4,30);
+    ctx.lineTo(33-frontSwing,48);
+    ctx.stroke();
 
 
     /*
@@ -2128,23 +2108,11 @@ function drawHorse(){
     */
 
     ctx.save();
-
-    ctx.translate(
-        p.x+30,
-        p.y-22
-    );
-
-    ctx.rotate(-.35);
+    ctx.translate(30,-22);
+    ctx.rotate(-.35+Math.sin(horse.breathe*.5)*.03);
 
     ctx.fillStyle="#70401e";
-
-    ctx.fillRect(
-        -11,
-        -38,
-        22,
-        55
-    );
-
+    ctx.fillRect(-11,-38,22,55);
     ctx.restore();
 
 
@@ -2153,143 +2121,59 @@ function drawHorse(){
     */
 
     ctx.fillStyle="#7d4a25";
-
     ctx.beginPath();
-
-    ctx.ellipse(
-        p.x+56,
-        p.y-41,
-        24,
-        18,
-        0,
-        0,
-        Math.PI*2
-    );
-
+    ctx.ellipse(56,-41,24,18,0,0,Math.PI*2);
     ctx.fill();
 
-
-    /*
-        focinho
-    */
 
     ctx.fillStyle="#5a321b";
-
     ctx.beginPath();
-
-    ctx.ellipse(
-        p.x+73,
-        p.y-37,
-        12,
-        9,
-        0,
-        0,
-        Math.PI*2
-    );
-
+    ctx.ellipse(73,-37,12,9,0,0,Math.PI*2);
     ctx.fill();
 
 
+    ctx.fillStyle="#21150e";
+    ctx.beginPath();
+    ctx.moveTo(14,-18);
+    ctx.lineTo(25,-59);
+    ctx.lineTo(44,-23);
+    ctx.closePath();
+    ctx.fill();
+
+
+    ctx.fillStyle="#050505";
+    ctx.beginPath();
+    ctx.arc(62,-47,3,0,Math.PI*2);
+    ctx.fill();
+
+
+    ctx.fillStyle="#24150d";
+    ctx.fillRect(-22,-20,44,11);
+
+
     /*
-        crina
+        cauda
     */
 
     ctx.fillStyle="#21150e";
-
     ctx.beginPath();
-
-    ctx.moveTo(
-        p.x+14,
-        p.y-18
+    ctx.moveTo(-42,-8);
+    ctx.quadraticCurveTo(
+        -58+Math.sin(horse.breathe)*4,
+        10+gait*10,
+        -50,38
     );
-
-    ctx.lineTo(
-        p.x+25,
-        p.y-59
-    );
-
-    ctx.lineTo(
-        p.x+44,
-        p.y-23
-    );
-
+    ctx.quadraticCurveTo(-44,10,-38,-6);
     ctx.closePath();
-
     ctx.fill();
 
 
-    /*
-        olho
-    */
-
-    ctx.fillStyle="#050505";
-
-    ctx.beginPath();
-
-    ctx.arc(
-        p.x+62,
-        p.y-47,
-        3,
-        0,
-        Math.PI*2
-    );
-
-    ctx.fill();
-
-
-    /*
-        pernas
-    */
-
-    ctx.strokeStyle="#4b2a18";
-
-    ctx.lineWidth=8;
-
-    ctx.beginPath();
-
-    ctx.moveTo(
-        p.x-23,
-        p.y+12
-    );
-
-    ctx.lineTo(
-        p.x-27,
-        p.y+48
-    );
-
-    ctx.moveTo(
-        p.x+20,
-        p.y+12
-    );
-
-    ctx.lineTo(
-        p.x+25,
-        p.y+48
-    );
-
-    ctx.stroke();
-
-
-    /*
-        sela
-    */
-
-    ctx.fillStyle="#24150d";
-
-    ctx.fillRect(
-        p.x-22,
-        p.y-20,
-        44,
-        11
-    );
+    ctx.restore();
 
 
     if(mounted){
 
-        drawRider(
-            p.x,
-            p.y-48
-        );
+        drawRider(p.x,p.y-48-bodyBob,facing);
 
     }
 
@@ -2297,67 +2181,35 @@ function drawHorse(){
 
 
 /* =====================================================
-PERSONAGEM
+PERSONAGEM (no cavalo)
 ===================================================== */
 
-function drawRider(x,y){
+function drawRider(x,y,facing){
 
-    /*
-        corpo
-    */
+    ctx.save();
+    ctx.translate(x,y);
+    ctx.scale(facing,1);
 
     ctx.fillStyle="#263c4d";
-
-    ctx.fillRect(
-        x-10,
-        y,
-        20,
-        30
-    );
-
-
-    /*
-        cabeça
-    */
+    ctx.fillRect(-10,0,20,30);
 
     ctx.fillStyle="#c98b67";
-
     ctx.beginPath();
-
-    ctx.arc(
-        x,
-        y-10,
-        10,
-        0,
-        Math.PI*2
-    );
-
+    ctx.arc(0,-10,10,0,Math.PI*2);
     ctx.fill();
-
-
-    /*
-        cabelo
-    */
 
     ctx.fillStyle="#20150f";
-
     ctx.beginPath();
-
-    ctx.arc(
-        x,
-        y-15,
-        11,
-        Math.PI,
-        Math.PI*2
-    );
-
+    ctx.arc(0,-15,11,Math.PI,Math.PI*2);
     ctx.fill();
+
+    ctx.restore();
 
 }
 
 
 /* =====================================================
-PLAYER A PÉ
+PLAYER A PÉ (com animação de caminhada)
 ===================================================== */
 
 function drawPlayer(){
@@ -2365,91 +2217,25 @@ function drawPlayer(){
     if(mounted)
         return;
 
+    const p=screen(player.x,player.y);
+    const facing=player.facing;
 
-    const p=
-        screen(
-            player.x,
-            player.y
-        );
+    let jumpHeight=Math.sin(player.jump*Math.PI)*25;
 
-
-    let jumpHeight=
-        Math.sin(
-            player.jump*Math.PI
-        )*25;
+    const walk=player.moving?Math.sin(player.walkCycle):0;
+    const legSwing=walk*10;
+    const armSwing=-walk*8;
+    const bob=player.moving?Math.abs(Math.sin(player.walkCycle))*2:0;
 
 
-    /*
-        sombra
-    */
+    ctx.save();
+    ctx.translate(p.x,p.y);
+    ctx.scale(facing,1);
 
-    ctx.fillStyle=
-        "rgba(0,0,0,.3)";
 
+    ctx.fillStyle="rgba(0,0,0,.3)";
     ctx.beginPath();
-
-    ctx.ellipse(
-        p.x,
-        p.y+22,
-        18,
-        7,
-        0,
-        0,
-        Math.PI*2
-    );
-
-    ctx.fill();
-
-
-    /*
-        corpo
-    */
-
-    ctx.fillStyle="#2c4050";
-
-    ctx.fillRect(
-        p.x-12,
-        p.y-20-jumpHeight,
-        24,
-        35
-    );
-
-
-    /*
-        cabeça
-    */
-
-    ctx.fillStyle="#c98b67";
-
-    ctx.beginPath();
-
-    ctx.arc(
-        p.x,
-        p.y-33-jumpHeight,
-        11,
-        0,
-        Math.PI*2
-    );
-
-    ctx.fill();
-
-
-    /*
-        cabelo
-    */
-
-    ctx.fillStyle="#21160f";
-
-    ctx.beginPath();
-
-    ctx.arc(
-        p.x,
-        p.y-38-jumpHeight,
-        12,
-        Math.PI,
-        Math.PI*2
-    );
-
+    ctx.ellipse(0,22,18,7,0,0,Math.PI*2);
     ctx.fill();
 
 
@@ -2458,32 +2244,64 @@ function drawPlayer(){
     */
 
     ctx.strokeStyle="#202a31";
-
     ctx.lineWidth=7;
+    ctx.lineCap="round";
 
     ctx.beginPath();
-
-    ctx.moveTo(
-        p.x-6,
-        p.y+14-jumpHeight
-    );
-
-    ctx.lineTo(
-        p.x-8,
-        p.y+38-jumpHeight
-    );
-
-    ctx.moveTo(
-        p.x+6,
-        p.y+14-jumpHeight
-    );
-
-    ctx.lineTo(
-        p.x+8,
-        p.y+38-jumpHeight
-    );
-
+    ctx.moveTo(-6,14-jumpHeight-bob);
+    ctx.lineTo(-8+legSwing,38-jumpHeight);
+    ctx.moveTo(6,14-jumpHeight-bob);
+    ctx.lineTo(8-legSwing,38-jumpHeight);
     ctx.stroke();
+
+
+    /*
+        corpo
+    */
+
+    ctx.fillStyle="#2c4050";
+    ctx.fillRect(-12,-20-jumpHeight-bob,24,35);
+
+
+    /*
+        braços
+    */
+
+    ctx.strokeStyle="#2c4050";
+    ctx.lineWidth=6;
+
+    ctx.beginPath();
+    ctx.moveTo(-11,-14-jumpHeight-bob);
+    ctx.lineTo(-13+armSwing,4-jumpHeight);
+    ctx.moveTo(11,-14-jumpHeight-bob);
+    ctx.lineTo(13-armSwing,4-jumpHeight);
+    ctx.stroke();
+
+
+    /*
+        cabeça
+    */
+
+    ctx.fillStyle="#c98b67";
+    ctx.beginPath();
+    ctx.arc(0,-33-jumpHeight-bob,11,0,Math.PI*2);
+    ctx.fill();
+
+
+    ctx.fillStyle="#21160f";
+    ctx.beginPath();
+    ctx.arc(0,-38-jumpHeight-bob,12,Math.PI,Math.PI*2);
+    ctx.fill();
+
+
+    ctx.restore();
+
+
+    if(player.moving && player.running && player.grounded && Math.random()<.25){
+
+        spawnParticle(player.x,player.y+15,"dust");
+
+    }
 
 }
 
@@ -2494,93 +2312,45 @@ ACAMPAMENTO
 
 function drawCamp(){
 
-    const p=
-        screen(
-            camp.x,
-            camp.y
-        );
+    const p=screen(camp.x,camp.y);
 
-
-    if(
-        p.x<-200||
-        p.x>W+200||
-        p.y<-200||
-        p.y>H+200
-    )
+    if(p.x<-200||p.x>W+200||p.y<-200||p.y>H+200)
         return;
 
-
-    /*
-        barraca
-    */
-
     ctx.fillStyle="#8d6741";
-
     ctx.beginPath();
-
-    ctx.moveTo(
-        p.x-65,
-        p.y+35
-    );
-
-    ctx.lineTo(
-        p.x,
-        p.y-45
-    );
-
-    ctx.lineTo(
-        p.x+65,
-        p.y+35
-    );
-
+    ctx.moveTo(p.x-65,p.y+35);
+    ctx.lineTo(p.x,p.y-45);
+    ctx.lineTo(p.x+65,p.y+35);
     ctx.closePath();
-
     ctx.fill();
 
-
-    /*
-        fogo
-    */
+    const flicker=Math.sin(waterTime*8)*3;
 
     ctx.fillStyle="#e34d25";
-
     ctx.beginPath();
-
-    ctx.arc(
-        p.x,
-        p.y+58,
-        17,
-        0,
-        Math.PI*2
-    );
-
+    ctx.arc(p.x,p.y+58,17+flicker*.2,0,Math.PI*2);
     ctx.fill();
-
 
     ctx.fillStyle="#ffd15a";
-
     ctx.beginPath();
-
-    ctx.arc(
-        p.x,
-        p.y+52,
-        9,
-        0,
-        Math.PI*2
-    );
-
+    ctx.arc(p.x,p.y+52,9+flicker*.15,0,Math.PI*2);
     ctx.fill();
+
+
+    if(sky.d<.55){
+
+        ctx.fillStyle=`rgba(255,150,60,${.25+Math.sin(waterTime*6)*.05})`;
+        ctx.beginPath();
+        ctx.arc(p.x,p.y+45,70,0,Math.PI*2);
+        ctx.fill();
+
+    }
 
 
     ctx.fillStyle="white";
-
     ctx.font="bold 13px Arial";
-
-    ctx.fillText(
-        "ACAMPAMENTO",
-        p.x-60,
-        p.y-55
-    );
+    ctx.fillText("ACAMPAMENTO",p.x-60,p.y-55);
 
 }
 
@@ -2591,120 +2361,60 @@ CACHOEIRA
 
 function drawWaterfall(){
 
-    const p=
-        screen(
-            waterfall.x,
-            waterfall.y
-        );
+    const p=screen(waterfall.x,waterfall.y);
 
-
-    if(
-        p.x<-300||
-        p.x>W+300||
-        p.y<-300||
-        p.y>H+300
-    )
+    if(p.x<-300||p.x>W+300||p.y<-300||p.y>H+300)
         return;
 
-
-    /*
-        montanha
-    */
-
     ctx.fillStyle="#4b554e";
-
     ctx.beginPath();
-
-    ctx.moveTo(
-        p.x-210,
-        p.y+100
-    );
-
-    ctx.lineTo(
-        p.x-90,
-        p.y-130
-    );
-
-    ctx.lineTo(
-        p.x,
-        p.y-210
-    );
-
-    ctx.lineTo(
-        p.x+110,
-        p.y-110
-    );
-
-    ctx.lineTo(
-        p.x+220,
-        p.y+100
-    );
-
+    ctx.moveTo(p.x-210,p.y+100);
+    ctx.lineTo(p.x-90,p.y-130);
+    ctx.lineTo(p.x,p.y-210);
+    ctx.lineTo(p.x+110,p.y-110);
+    ctx.lineTo(p.x+220,p.y+100);
     ctx.closePath();
-
     ctx.fill();
 
-
-    /*
-        água
-    */
-
     ctx.fillStyle="#76cde1";
+    ctx.fillRect(p.x-27,p.y-110,54,210);
 
-    ctx.fillRect(
-        p.x-27,
-        p.y-110,
-        54,
-        210
-    );
-
-
-    ctx.fillStyle=
-        "rgba(240,255,255,.7)";
-
+    ctx.fillStyle="rgba(240,255,255,.7)";
 
     for(let i=0;i<7;i++){
 
-        ctx.fillRect(
-            p.x-18+i*6,
-            p.y-95,
-            3,
-            175
-        );
+        const flow=(waterTime*90+i*30)%210;
+
+        ctx.fillRect(p.x-18+i*6,p.y-95+flow*0,3,175);
 
     }
 
-
     /*
-        lago
+        névoa/respingo na base
     */
 
+    if(Math.random()<.4){
+
+        spawnParticle(waterfall.x+(Math.random()-.5)*50,waterfall.y+95,"mist");
+
+    }
+
     ctx.fillStyle="#438da1";
-
     ctx.beginPath();
-
-    ctx.ellipse(
-        p.x,
-        p.y+105,
-        80,
-        27,
-        0,
-        0,
-        Math.PI*2
-    );
-
+    ctx.ellipse(p.x,p.y+105,80,27,0,0,Math.PI*2);
     ctx.fill();
 
+    ctx.fillStyle="rgba(255,255,255,.4)";
+    for(let i=0;i<10;i++){
+        const rx=p.x-70+((i*37+waterTime*50)%140);
+        ctx.beginPath();
+        ctx.arc(rx,p.y+105,2,0,Math.PI*2);
+        ctx.fill();
+    }
 
     ctx.fillStyle="white";
-
     ctx.font="bold 14px Arial";
-
-    ctx.fillText(
-        "CACHOEIRA",
-        p.x-45,
-        p.y-230
-    );
+    ctx.fillText("CACHOEIRA",p.x-45,p.y-230);
 
 }
 
@@ -2715,38 +2425,32 @@ NEBLINA
 
 function drawFog(){
 
-    /*
-        neblina suave no horizonte
-    */
+    const g=ctx.createLinearGradient(0,H*.38,0,H*.63);
 
-    const g=
-        ctx.createLinearGradient(
-            0,
-            H*.38,
-            0,
-            H*.63
-        );
+    const fogAlpha=.25+(1-sky.d)*.15;
 
-
-    g.addColorStop(
-        0,
-        "rgba(210,225,215,.25)"
-    );
-
-    g.addColorStop(
-        1,
-        "rgba(210,225,215,0)"
-    );
-
+    g.addColorStop(0,`rgba(210,225,215,${fogAlpha})`);
+    g.addColorStop(1,"rgba(210,225,215,0)");
 
     ctx.fillStyle=g;
+    ctx.fillRect(0,H*.32,W,H*.35);
 
-    ctx.fillRect(
-        0,
-        H*.32,
-        W,
-        H*.35
-    );
+}
+
+
+/* =====================================================
+CAMADA DE ILUMINAÇÃO NOTURNA
+===================================================== */
+
+function drawNightOverlay(){
+
+    if(sky.d>=.5)
+        return;
+
+    const dark=(1-sky.d/.5)*.55;
+
+    ctx.fillStyle=`rgba(8,12,28,${dark})`;
+    ctx.fillRect(0,0,W,H);
 
 }
 
@@ -2757,84 +2461,38 @@ ORDEM DOS OBJETOS
 
 function renderWorld(){
 
-    /*
-        céu
-    */
-
     drawSky();
-
-
-    /*
-        montanhas ficam PARADAS
-    */
-
+    drawClouds();
     drawMountains();
-
-
-    /*
-        chão
-    */
-
     drawGround();
-
-
-    /*
-        rio
-    */
-
+    drawGrassTufts();
+    drawFlowers();
     drawRiver();
-
-
-    /*
-        caminho
-    */
-
     drawPath();
 
-
     /*
-        objetos do mundo
+        ordenar por profundidade (y) para sobreposição correta
     */
 
-    for(
-        const b of bushes
-    )
-        drawBush(b);
+    const drawables=[];
 
+    for(const b of bushes) drawables.push({y:b.y,fn:()=>drawBush(b)});
+    for(const r of rocks) drawables.push({y:r.y,fn:()=>drawRock(r)});
+    for(const t of trees) drawables.push({y:t.y,fn:()=>drawTree(t)});
 
-    for(
-        const r of rocks
-    )
-        drawRock(r);
+    drawables.push({y:camp.y,fn:drawCamp});
+    drawables.push({y:waterfall.y+100,fn:drawWaterfall});
+    drawables.push({y:mounted?horse.y:player.y,fn:()=>{drawHorse();drawPlayer();}});
 
+    drawables.sort((a,b)=>a.y-b.y);
 
-    for(
-        const t of trees
-    )
-        drawTree(t);
-
+    for(const d of drawables)
+        d.fn();
 
     drawAnimals();
-
-    drawCamp();
-
-    drawWaterfall();
-
-
-    /*
-        cavalo e jogador
-    */
-
-    drawHorse();
-
-    drawPlayer();
-
-
-    /*
-        neblina no horizonte
-    */
-
+    drawParticles();
     drawFog();
+    drawNightOverlay();
 
 }
 
@@ -2845,124 +2503,51 @@ MINIMAPA
 
 function drawMiniMap(){
 
-    mctx.clearRect(
-        0,
-        0,
-        190,
-        190
-    );
-
-
-    /*
-        fundo
-    */
+    mctx.clearRect(0,0,190,190);
 
     mctx.fillStyle="#315b35";
-
-    mctx.fillRect(
-        0,
-        0,
-        190,
-        190
-    );
-
-
-    /*
-        rio
-    */
+    mctx.fillRect(0,0,190,190);
 
     mctx.fillStyle="#4387a0";
 
-    let riverMap=
-        95+
-        (river.x-player.x)/
-        (WORLD*2)*190;
+    let riverMap=95+(river.x-player.x)/(WORLD*2)*190;
 
-    mctx.fillRect(
-        riverMap,
-        0,
-        7,
-        190
-    );
+    mctx.fillRect(riverMap,0,7,190);
 
-
-    /*
-        acampamento
-    */
-
-    let cx=
-        95+
-        (camp.x-player.x)/
-        (WORLD*2)*190;
-
-    let cy=
-        95+
-        (camp.y-player.y)/
-        (WORLD*2)*190;
-
+    let cx=95+(camp.x-player.x)/(WORLD*2)*190;
+    let cy=95+(camp.y-player.y)/(WORLD*2)*190;
 
     mctx.fillStyle="#e2bd4d";
-
     mctx.beginPath();
-
-    mctx.arc(
-        cx,
-        cy,
-        5,
-        0,
-        Math.PI*2
-    );
-
+    mctx.arc(cx,cy,5,0,Math.PI*2);
     mctx.fill();
 
-
-    /*
-        cachoeira
-    */
-
-    let wx=
-        95+
-        (waterfall.x-player.x)/
-        (WORLD*2)*190;
-
-    let wy=
-        95+
-        (waterfall.y-player.y)/
-        (WORLD*2)*190;
-
+    let wx=95+(waterfall.x-player.x)/(WORLD*2)*190;
+    let wy=95+(waterfall.y-player.y)/(WORLD*2)*190;
 
     mctx.fillStyle="#8ee0ee";
-
     mctx.beginPath();
-
-    mctx.arc(
-        wx,
-        wy,
-        5,
-        0,
-        Math.PI*2
-    );
-
+    mctx.arc(wx,wy,5,0,Math.PI*2);
     mctx.fill();
-
-
-    /*
-        jogador
-    */
 
     mctx.fillStyle="yellow";
-
     mctx.beginPath();
-
-    mctx.arc(
-        95,
-        95,
-        5,
-        0,
-        Math.PI*2
-    );
-
+    mctx.arc(95,95,5,0,Math.PI*2);
     mctx.fill();
+
+    /*
+        indicador de direção do jogador
+    */
+
+    mctx.strokeStyle="yellow";
+    mctx.lineWidth=2;
+    mctx.beginPath();
+    mctx.moveTo(95,95);
+    mctx.lineTo(
+        95+Math.cos(player.direction)*10,
+        95+Math.sin(player.direction)*10
+    );
+    mctx.stroke();
 
 }
 
@@ -2971,10 +2556,6 @@ function drawMiniMap(){
 RELÓGIO
 ===================================================== */
 
-let minutes=
-    10*60+45;
-
-
 function updateClock(){
 
     minutes+=.06;
@@ -2982,25 +2563,16 @@ function updateClock(){
     if(minutes>=1440)
         minutes=0;
 
+    let h=Math.floor(minutes/60);
+    let m=Math.floor(minutes%60);
 
-    let h=
-        Math.floor(
-            minutes/60
-        );
+    document.getElementById("clockText").textContent=
+        String(h).padStart(2,"0")+":"+String(m).padStart(2,"0");
 
-    let m=
-        Math.floor(
-            minutes%60
-        );
+    const d=daylightFactor();
 
-
-    document
-        .getElementById("clockText")
-        .textContent=
-            String(h).padStart(2,"0")
-            +":"
-            +
-            String(m).padStart(2,"0");
+    document.getElementById("clockIcon").textContent=
+        d>.6?"☀️":(d>.3?"🌤️":(d>.12?"🌙":"🌌"));
 
 }
 
@@ -3011,43 +2583,14 @@ HUD
 
 function updateHUD(){
 
-    document
-        .getElementById("hpBar")
-        .style.width=
-            player.health+"%";
+    document.getElementById("hpBar").style.width=player.health+"%";
+    document.getElementById("hpText").textContent=Math.floor(player.health)+" / 100";
 
+    document.getElementById("staminaBar").style.width=player.stamina+"%";
+    document.getElementById("staminaText").textContent=Math.floor(player.stamina)+" / 100";
 
-    document
-        .getElementById("hpText")
-        .textContent=
-            Math.floor(player.health)
-            +" / 100";
-
-
-    document
-        .getElementById("staminaBar")
-        .style.width=
-            player.stamina+"%";
-
-
-    document
-        .getElementById("staminaText")
-        .textContent=
-            Math.floor(player.stamina)
-            +" / 100";
-
-
-    document
-        .getElementById("horseBar")
-        .style.width=
-            horse.stamina+"%";
-
-
-    document
-        .getElementById("horseText")
-        .textContent=
-            Math.floor(horse.stamina)
-            +" / 100";
+    document.getElementById("horseBar").style.width=horse.stamina+"%";
+    document.getElementById("horseText").textContent=Math.floor(horse.stamina)+" / 100";
 
 }
 
@@ -3062,54 +2605,32 @@ function mountHorse(){
 
         mounted=false;
 
-        player.x=
-            horse.x+55;
+        player.x=horse.x+55;
+        player.y=horse.y;
 
-        player.y=
-            horse.y;
+        document.getElementById("horseInfo").classList.remove("show");
 
-
-        document
-            .getElementById("horseInfo")
-            .classList.remove("show");
-
-
-        showMessage(
-            "🐎 Você desmontou."
-        );
+        showMessage("🐎 Você desmontou.");
 
         return;
 
     }
 
 
-    if(
-        distance(
-            player,
-            horse
-        )<130
-    ){
+    if(distance(player,horse)<130){
 
         mounted=true;
 
         player.x=horse.x;
         player.y=horse.y;
 
+        document.getElementById("horseInfo").classList.add("show");
 
-        document
-            .getElementById("horseInfo")
-            .classList.add("show");
-
-
-        showMessage(
-            "🐎 Você montou no cavalo!"
-        );
+        showMessage("🐎 Você montou no cavalo!");
 
     }else{
 
-        showMessage(
-            "Aproxime-se do cavalo."
-        );
+        showMessage("Aproxime-se do cavalo.");
 
     }
 
@@ -3136,10 +2657,8 @@ function attack(){
 
     showMessage(
         mounted
-        ?
-        "🐎 O cavalo avançou!"
-        :
-        "⚔️ Você atacou!"
+        ?"🐎 O cavalo avançou!"
+        :"⚔️ Você atacou!"
     );
 
 }
@@ -3154,114 +2673,56 @@ let quest=0;
 
 function interact(){
 
-    /*
-        rio
-    */
-
-    if(
-        Math.abs(
-            player.x-river.x
-        )<100
-    ){
+    if(Math.abs(player.x-river.x)<100){
 
         if(quest<1){
 
             quest=1;
 
-            document
-                .getElementById("m1")
-                .textContent=
-                "☑ Encontrar o rio";
+            document.getElementById("m1").textContent="☑ Encontrar o rio";
+            document.getElementById("bigM1").textContent="☑ Encontrar o rio";
 
-            document
-                .getElementById("bigM1")
-                .textContent=
-                "☑ Encontrar o rio";
-
-            showMessage(
-                "💧 Você encontrou o rio!"
-            );
+            showMessage("💧 Você encontrou o rio!");
 
         }
 
     }
 
 
-    /*
-        acampamento
-    */
-
-    if(
-        distance(
-            player,
-            camp
-        )<150
-    ){
+    if(distance(player,camp)<150){
 
         if(quest<2){
 
             quest=2;
 
-            document
-                .getElementById("m2")
-                .textContent=
-                "☑ Encontrar o acampamento";
+            document.getElementById("m2").textContent="☑ Encontrar o acampamento";
+            document.getElementById("bigM2").textContent="☑ Encontrar o acampamento";
 
-            document
-                .getElementById("bigM2")
-                .textContent=
-                "☑ Encontrar o acampamento";
-
-            showMessage(
-                "🏕️ Acampamento encontrado!"
-            );
+            showMessage("🏕️ Acampamento encontrado!");
 
         }
 
     }
 
 
-    /*
-        cachoeira
-    */
-
-    if(
-        distance(
-            player,
-            waterfall
-        )<180
-    ){
+    if(distance(player,waterfall)<180){
 
         if(quest<3){
 
             quest=3;
 
-            document
-                .getElementById("m3")
-                .textContent=
-                "☑ Explorar a cachoeira";
+            document.getElementById("m3").textContent="☑ Explorar a cachoeira";
+            document.getElementById("bigM3").textContent="☑ Explorar a cachoeira";
 
-            document
-                .getElementById("bigM3")
-                .textContent=
-                "☑ Explorar a cachoeira";
-
-            showMessage(
-                "🎉 MISSÃO COMPLETA!"
-            );
+            showMessage("🎉 MISSÃO COMPLETA!");
 
         }
 
     }
 
 
-    document
-        .getElementById("missionProgress")
-        .textContent=
-            "Progresso: "
-            +
-            quest+
-            " / 3";
+    document.getElementById("missionProgress").textContent=
+        "Progresso: "+quest+" / 3";
 
 }
 
@@ -3275,31 +2736,16 @@ let messageTimer;
 
 function showMessage(text){
 
-    const el=
-        document.getElementById(
-            "message"
-        );
-
+    const el=document.getElementById("message");
 
     el.textContent=text;
-
     el.classList.add("show");
 
+    clearTimeout(messageTimer);
 
-    clearTimeout(
-        messageTimer
-    );
-
-
-    messageTimer=
-        setTimeout(
-            ()=>{
-                el.classList.remove(
-                    "show"
-                );
-            },
-            2200
-        );
+    messageTimer=setTimeout(()=>{
+        el.classList.remove("show");
+    },2200);
 
 }
 
@@ -3310,20 +2756,9 @@ JANELAS
 
 function openWindow(id){
 
-    document
-        .querySelectorAll(".window")
-        .forEach(
-            w=>
-                w.classList.remove(
-                    "show"
-                )
-        );
+    document.querySelectorAll(".window").forEach(w=>w.classList.remove("show"));
 
-
-    document
-        .getElementById(id)
-        .classList.add("show");
-
+    document.getElementById(id).classList.add("show");
 
     if(id==="mapWindow")
         drawBigMap();
@@ -3333,14 +2768,7 @@ function openWindow(id){
 
 function closeWindows(){
 
-    document
-        .querySelectorAll(".window")
-        .forEach(
-            w=>
-                w.classList.remove(
-                    "show"
-                )
-        );
+    document.querySelectorAll(".window").forEach(w=>w.classList.remove("show"));
 
 }
 
@@ -3351,59 +2779,19 @@ MAPA GRANDE
 
 function drawBigMap(){
 
-    const map=
-        document.getElementById(
-            "bigMap"
-        );
+    const map=document.getElementById("bigMap");
+    const c=map.getContext("2d");
 
-    const c=
-        map.getContext("2d");
-
-
-    c.clearRect(
-        0,
-        0,
-        map.width,
-        map.height
-    );
-
-
-    /*
-        floresta
-    */
+    c.clearRect(0,0,map.width,map.height);
 
     c.fillStyle="#315b35";
-
-    c.fillRect(
-        0,
-        0,
-        map.width,
-        map.height
-    );
-
-
-    /*
-        rio
-    */
+    c.fillRect(0,0,map.width,map.height);
 
     c.fillStyle="#3f819b";
-
-    c.fillRect(
-        430,
-        0,
-        55,
-        map.height
-    );
-
-
-    /*
-        montanhas
-    */
+    c.fillRect(430,0,55,map.height);
 
     c.fillStyle="#435c55";
-
     c.beginPath();
-
     c.moveTo(0,100);
     c.lineTo(120,30);
     c.lineTo(210,100);
@@ -3414,91 +2802,36 @@ function drawBigMap(){
     c.lineTo(900,30);
     c.lineTo(900,0);
     c.lineTo(0,0);
-
     c.closePath();
-
     c.fill();
 
-
-    /*
-        caminho
-    */
-
     c.strokeStyle="#9c8055";
-
     c.lineWidth=25;
 
     c.beginPath();
-
-    c.moveTo(
-        450,
-        275
-    );
-
-    c.lineTo(
-        250,
-        420
-    );
-
+    c.moveTo(450,275);
+    c.lineTo(250,420);
     c.stroke();
 
-
     /*
-        jogador
+        posição real do jogador no mapa
     */
+
+    const px=450+(player.x/WORLD)*380;
+    const py=275+(player.y/WORLD)*230;
 
     c.fillStyle="yellow";
-
     c.beginPath();
-
-    c.arc(
-        450,
-        275,
-        8,
-        0,
-        Math.PI*2
-    );
-
+    c.arc(px,py,8,0,Math.PI*2);
     c.fill();
 
-
-    /*
-        acampamento
-    */
-
     c.font="32px Arial";
-
-    c.fillText(
-        "🏕️",
-        210,
-        425
-    );
-
-
-    /*
-        cachoeira
-    */
-
-    c.fillText(
-        "💦",
-        700,
-        150
-    );
-
-
-    /*
-        título
-    */
+    c.fillText("🏕️",210,425);
+    c.fillText("💦",700,150);
 
     c.fillStyle="white";
-
     c.font="bold 20px Arial";
-
-    c.fillText(
-        "GRANDE FLORESTA",
-        350,
-        525
-    );
+    c.fillText("GRANDE FLORESTA",350,525);
 
 }
 
@@ -3507,34 +2840,41 @@ function drawBigMap(){
 LOOP
 ===================================================== */
 
-function loop(){
+let lastTime=performance.now();
+
+
+function loop(now){
+
+    const dt=Math.min(2,(now-lastTime)/16.67);
+    lastTime=now;
 
     updateMovement();
-
     updateAnimals();
+    updateClouds();
+    updateParticles();
+
+    windTime+=.02*dt;
+    waterTime+=.02*dt;
 
     if(player.jump>0){
 
-        player.jump-=.045;
+        player.jump-=.045*dt;
 
         if(player.jump<0)
             player.jump=0;
 
     }
 
-
     updateClock();
-
     updateHUD();
+    updateCamera();
+
+    ctx.clearRect(0,0,W,H);
 
     renderWorld();
-
     drawMiniMap();
 
-
-    requestAnimationFrame(
-        loop
-    );
+    requestAnimationFrame(loop);
 
 }
 
@@ -3543,11 +2883,9 @@ function loop(){
 INICIAR
 ===================================================== */
 
-showMessage(
-    "🌲 Bem-vindo à Grande Floresta!"
-);
+showMessage("🌲 Bem-vindo à Grande Floresta!");
 
-loop();
+requestAnimationFrame(loop);
 
 </script>
 
