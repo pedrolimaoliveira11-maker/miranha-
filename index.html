@@ -2,79 +2,72 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>UFC 3D - Rounds + Gráficos Realistas</title>
+<title>UFC 3D - Torcida + Juiz + Rostos</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{overflow:hidden;background:#05050c;font-family:'Segoe UI',Arial,sans-serif;user-select:none;color:#fff}
 #ui{position:absolute;inset:0;pointer-events:none;z-index:20}
 
-/* ===== SELEÇÃO ===== */
 #selectScreen{
   position:absolute;inset:0;background:linear-gradient(180deg,#050510,#0e0e28 50%,#05050c);
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   z-index:100;pointer-events:auto;transition:opacity .45s;
 }
-#selectScreen h1{font-size:52px;color:#ffd700;text-shadow:0 0 25px #ffd700,0 0 50px #000;letter-spacing:5px;margin-bottom:8px}
-#selectScreen .subtitle{color:#999;margin-bottom:36px;font-size:17px}
-.fighters-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px;max-width:920px;width:92%;margin-bottom:28px}
+#selectScreen h1{font-size:48px;color:#ffd700;text-shadow:0 0 25px #ffd700;letter-spacing:4px;margin-bottom:6px}
+#selectScreen .subtitle{color:#999;margin-bottom:30px;font-size:16px}
+.fighters-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:14px;max-width:960px;width:94%;margin-bottom:24px}
 .fighter-card{
   background:rgba(255,255,255,.04);border:3px solid #333;border-radius:14px;
-  padding:14px 8px;text-align:center;cursor:pointer;transition:all .22s;
+  padding:12px 8px;text-align:center;cursor:pointer;transition:all .22s;
 }
-.fighter-card:hover{border-color:#ffd700;transform:scale(1.06);background:rgba(255,215,0,.08)}
-.fighter-card.selected{border-color:#00e676;box-shadow:0 0 22px #00e676;background:rgba(0,230,118,.12)}
-.fighter-preview{width:64px;height:84px;margin:0 auto 8px;border-radius:8px;display:flex;align-items:flex-end;justify-content:center}
-.fighter-card .name{font-weight:700;font-size:14px;margin-bottom:2px}
+.fighter-card:hover{border-color:#ffd700;transform:scale(1.05);background:rgba(255,215,0,.08)}
+.fighter-card.selected{border-color:#00e676;box-shadow:0 0 20px #00e676;background:rgba(0,230,118,.12)}
+.face-preview{width:70px;height:70px;margin:0 auto 8px;border-radius:50%;overflow:hidden;border:3px solid #444}
+.fighter-card .name{font-weight:700;font-size:13px;margin-bottom:2px}
 .fighter-card .nick{font-size:11px;color:#ffd700}
 #startBtn{
-  padding:13px 48px;font-size:20px;font-weight:800;background:linear-gradient(90deg,#ffd700,#f90);
-  color:#111;border:none;border-radius:40px;cursor:pointer;transition:all .2s;
-  box-shadow:0 0 28px rgba(255,215,0,.45);
+  padding:12px 44px;font-size:18px;font-weight:800;background:linear-gradient(90deg,#ffd700,#f90);
+  color:#111;border:none;border-radius:40px;cursor:pointer;box-shadow:0 0 25px rgba(255,215,0,.4);
 }
-#startBtn:hover{transform:scale(1.07)}
+#startBtn:hover{transform:scale(1.06)}
 #startBtn:disabled{opacity:.35;cursor:not-allowed;transform:none}
 
-/* ===== UI LUTA ===== */
 #fightUI{display:none}
-.health-container{position:absolute;top:22px;width:35%}
+.health-container{position:absolute;top:20px;width:34%}
 #playerHealthBox{left:2.5%}
 #enemyHealthBox{right:2.5%}
-.health-bar{height:24px;background:rgba(0,0,0,.8);border:2px solid #fff;border-radius:7px;overflow:hidden}
+.health-bar{height:22px;background:rgba(0,0,0,.8);border:2px solid #fff;border-radius:6px;overflow:hidden}
 .health-fill{height:100%;transition:width .2s}
 #playerFill{background:linear-gradient(90deg,#00c853,#76ff03);width:100%}
 #enemyFill{background:linear-gradient(90deg,#d50000,#ff1744);width:100%;float:right}
-.health-text{position:absolute;top:0;width:100%;height:24px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;text-shadow:0 1px 3px #000}
-.name-label{margin-top:5px;font-size:14px;font-weight:700;text-shadow:0 2px 4px #000}
+.health-text{position:absolute;top:0;width:100%;height:22px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;text-shadow:0 1px 3px #000}
+.name-label{margin-top:4px;font-size:13px;font-weight:700;text-shadow:0 2px 4px #000}
 #playerName{text-align:left}
 #enemyName{text-align:right}
-#roundInfo{position:absolute;top:16px;left:50%;transform:translateX(-50%);text-align:center}
-#round{color:#ffd700;font-size:24px;font-weight:900;text-shadow:0 0 14px #000;letter-spacing:2px}
-#score{color:#ccc;font-size:15px;margin-top:2px}
-#message{position:absolute;top:46%;left:50%;transform:translate(-50%,-50%);font-size:48px;font-weight:900;text-align:center;text-shadow:0 0 30px #000;opacity:0;transition:opacity .3s;letter-spacing:2px}
-#ko{position:absolute;top:36%;left:50%;transform:translate(-50%,-50%);font-size:92px;color:#ff1744;font-weight:900;text-shadow:0 0 40px #000;opacity:0;transition:opacity .4s;letter-spacing:10px}
-#controls{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);color:#aaa;font-size:12px;background:rgba(0,0,0,.6);padding:7px 18px;border-radius:20px;border:1px solid rgba(255,255,255,.12)}
-#fps{position:absolute;bottom:16px;right:16px;color:#555;font-size:11px}
+#roundInfo{position:absolute;top:14px;left:50%;transform:translateX(-50%);text-align:center}
+#round{color:#ffd700;font-size:22px;font-weight:900;text-shadow:0 0 12px #000;letter-spacing:2px}
+#score{color:#ccc;font-size:13px;margin-top:2px}
+#message{position:absolute;top:45%;left:50%;transform:translate(-50%,-50%);font-size:44px;font-weight:900;text-align:center;text-shadow:0 0 25px #000;opacity:0;transition:opacity .3s;letter-spacing:2px}
+#ko{position:absolute;top:35%;left:50%;transform:translate(-50%,-50%);font-size:88px;color:#ff1744;font-weight:900;text-shadow:0 0 35px #000;opacity:0;transition:opacity .4s;letter-spacing:10px}
+#controls{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);color:#aaa;font-size:11px;background:rgba(0,0,0,.6);padding:6px 16px;border-radius:18px}
+#fps{position:absolute;bottom:14px;right:14px;color:#555;font-size:11px}
 
-/* ===== TELA DE RESULTADO ===== */
 #resultScreen{
-  position:absolute;inset:0;background:rgba(0,0,0,.82);
+  position:absolute;inset:0;background:rgba(0,0,0,.85);
   display:none;flex-direction:column;align-items:center;justify-content:center;
   z-index:90;pointer-events:auto;
 }
-#resultScreen h2{font-size:42px;margin-bottom:12px;text-shadow:0 0 20px #000}
-#resultScreen .sub{color:#bbb;margin-bottom:32px;font-size:18px}
-.result-btns{display:flex;gap:18px}
-.result-btns button{
-  padding:12px 32px;font-size:17px;font-weight:700;border:none;border-radius:30px;cursor:pointer;transition:all .2s;
-}
+#resultScreen h2{font-size:40px;margin-bottom:10px;text-shadow:0 0 18px #000}
+#resultScreen .sub{color:#bbb;margin-bottom:28px;font-size:16px}
+.result-btns{display:flex;gap:16px}
+.result-btns button{padding:11px 28px;font-size:16px;font-weight:700;border:none;border-radius:28px;cursor:pointer}
 #btnRematch{background:linear-gradient(90deg,#00c853,#69f0ae);color:#111}
 #btnChange{background:linear-gradient(90deg,#2979ff,#82b1ff);color:#fff}
-.result-btns button:hover{transform:scale(1.07)}
+.result-btns button:hover{transform:scale(1.06)}
 </style>
 </head>
 <body>
 
-<!-- SELEÇÃO -->
 <div id="selectScreen">
   <h1>UFC 3D</h1>
   <div class="subtitle">Escolha seu lutador</div>
@@ -82,7 +75,6 @@ body{overflow:hidden;background:#05050c;font-family:'Segoe UI',Arial,sans-serif;
   <button id="startBtn" disabled>COMEÇAR LUTA</button>
 </div>
 
-<!-- UI LUTA -->
 <div id="ui">
   <div id="fightUI">
     <div class="health-container" id="playerHealthBox">
@@ -104,7 +96,6 @@ body{overflow:hidden;background:#05050c;font-family:'Segoe UI',Arial,sans-serif;
   </div>
 </div>
 
-<!-- RESULTADO -->
 <div id="resultScreen">
   <h2 id="resultTitle">VOCÊ VENCEU!</h2>
   <div class="sub" id="resultSub">3 rounds</div>
@@ -117,40 +108,66 @@ body{overflow:hidden;background:#05050c;font-family:'Segoe UI',Arial,sans-serif;
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 const FIGHTERS = [
-  {id:'charles',name:'Charles Oliveira',nick:'Do Bronx',body:0x1b5e20,skin:0xe8b88a},
-  {id:'islam',name:'Islam Makhachev',nick:'The Eagle',body:0x0d47a1,skin:0xd4a574},
-  {id:'khabib',name:'Khabib Nurmagomedov',nick:'The Eagle',body:0x1a237e,skin:0xc99b6d},
-  {id:'mcgregor',name:'Conor McGregor',nick:'The Notorious',body:0xb71c1c,skin:0xffcc99},
-  {id:'jones',name:'Jon Jones',nick:'Bones',body:0x212121,skin:0x8d6e63},
-  {id:'adesanya',name:'Israel Adesanya',nick:'Stylebender',body:0x4a148c,skin:0x5d4037},
-  {id:'poirier',name:'Dustin Poirier',nick:'The Diamond',body:0x01579b,skin:0xffcc99},
-  {id:'volkanovski',name:'Alexander Volkanovski',nick:'The Great',body:0x37474f,skin:0xffcc99}
+  {id:'charles',name:'Charles Oliveira',nick:'Do Bronx',body:0x1b5e20,skin:0xe8b88a,hair:0x1a1a1a},
+  {id:'islam',name:'Islam Makhachev',nick:'The Eagle',body:0x0d47a1,skin:0xd4a574,hair:0x111},
+  {id:'khabib',name:'Khabib Nurmagomedov',nick:'The Eagle',body:0x1a237e,skin:0xc99b6d,hair:0x111},
+  {id:'mcgregor',name:'Conor McGregor',nick:'The Notorious',body:0xb71c1c,skin:0xffcc99,hair:0x4a3728},
+  {id:'jones',name:'Jon Jones',nick:'Bones',body:0x212121,skin:0x8d6e63,hair:0x111},
+  {id:'adesanya',name:'Israel Adesanya',nick:'Stylebender',body:0x4a148c,skin:0x5d4037,hair:0x111},
+  {id:'poirier',name:'Dustin Poirier',nick:'The Diamond',body:0x01579b,skin:0xffcc99,hair:0x3e2723},
+  {id:'volkanovski',name:'Alexander Volkanovski',nick:'The Great',body:0x37474f,skin:0xffcc99,hair:0x1a1a1a}
 ];
 
 let selectedFighter=null, playerData=null, enemyData=null;
-let scene,camera,renderer,player,enemy,clock,bgMesh,bgTex,bgCanvas,bgCtx;
-let gameOver=false, messageTimer=0, bgOffset=0, keys={}, particles=[];
+let scene,camera,renderer,player,enemy,referee,clock,bgMesh,bgTex,bgCanvas,bgCtx;
+let gameOver=false, messageTimer=0, bgOffset=0, keys={}, particles=[], crowd=[];
 let enemyCooldown=1.1, frameCount=0, lastFps=performance.now();
-let playerWins=0, enemyWins=0, currentRound=1;
-let roundEnding=false, camShake=0;
+let playerWins=0, enemyWins=0, currentRound=1, roundEnding=false, camShake=0;
 
 const grid=document.getElementById('fightersGrid');
 const startBtn=document.getElementById('startBtn');
 
+function createFaceCanvas(skin, hair){
+  const c=document.createElement('canvas'); c.width=128; c.height=128;
+  const ctx=c.getContext('2d');
+  // pele
+  ctx.fillStyle='#'+skin.toString(16).padStart(6,'0');
+  ctx.beginPath(); ctx.arc(64,64,58,0,Math.PI*2); ctx.fill();
+  // cabelo
+  ctx.fillStyle='#'+hair.toString(16).padStart(6,'0');
+  ctx.beginPath(); ctx.ellipse(64,38,50,28,0,0,Math.PI*2); ctx.fill();
+  // olhos
+  ctx.fillStyle='#fff'; ctx.beginPath(); ctx.ellipse(45,60,10,7,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(83,60,10,7,0,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#222'; ctx.beginPath(); ctx.arc(45,60,4,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(83,60,4,0,Math.PI*2); ctx.fill();
+  // sobrancelha
+  ctx.strokeStyle='#222'; ctx.lineWidth=3;
+  ctx.beginPath(); ctx.moveTo(35,50); ctx.lineTo(55,48); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(73,48); ctx.lineTo(93,50); ctx.stroke();
+  // nariz
+  ctx.strokeStyle='rgba(0,0,0,0.3)'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(64,65); ctx.lineTo(60,78); ctx.lineTo(68,78); ctx.stroke();
+  // boca
+  ctx.strokeStyle='#8d6e63'; ctx.lineWidth=2.5;
+  ctx.beginPath(); ctx.arc(64,90,12,0.1,Math.PI-0.1); ctx.stroke();
+  return c;
+}
+
 FIGHTERS.forEach(f=>{
   const card=document.createElement('div');
   card.className='fighter-card';
+  const faceC=createFaceCanvas(f.skin,f.hair);
   card.innerHTML=`
-    <div class="fighter-preview" style="background:linear-gradient(180deg,#${f.body.toString(16).padStart(6,'0')} 45%,#1a1a1a)">
-      <div style="width:26px;height:32px;background:#${f.skin.toString(16).padStart(6,'0')};border-radius:50% 50% 40% 40%;margin-bottom:6px;box-shadow:0 0 0 3px #${f.body.toString(16).padStart(6,'0')}"></div>
-    </div>
+    <div class="face-preview"></div>
     <div class="name">${f.name}</div>
     <div class="nick">"${f.nick}"</div>`;
+  card.querySelector('.face-preview').appendChild(faceC);
+  faceC.style.width='100%'; faceC.style.height='100%';
   card.onclick=()=>{
     document.querySelectorAll('.fighter-card').forEach(c=>c.classList.remove('selected'));
     card.classList.add('selected');
-    selectedFighter=f;
-    startBtn.disabled=false;
+    selectedFighter=f; startBtn.disabled=false;
   };
   grid.appendChild(card);
 });
@@ -166,7 +183,7 @@ startBtn.onclick=()=>{
     document.getElementById('fightUI').style.display='block';
     document.getElementById('resultScreen').style.display='none';
     startGame();
-  },450);
+  },400);
 };
 
 document.getElementById('btnRematch').onclick=()=>{
@@ -175,7 +192,6 @@ document.getElementById('btnRematch').onclick=()=>{
   document.getElementById('ko').style.opacity='0';
   resetRound();
 };
-
 document.getElementById('btnChange').onclick=()=>{
   document.getElementById('resultScreen').style.display='none';
   document.getElementById('fightUI').style.display='none';
@@ -183,16 +199,15 @@ document.getElementById('btnChange').onclick=()=>{
   if(renderer){renderer.domElement.remove(); renderer=null;}
   document.getElementById('selectScreen').style.display='flex';
   document.getElementById('selectScreen').style.opacity='1';
-  startBtn.disabled=true;
-  selectedFighter=null;
+  startBtn.disabled=true; selectedFighter=null;
   document.querySelectorAll('.fighter-card').forEach(c=>c.classList.remove('selected'));
 };
 
 function startGame(){
   scene=new THREE.Scene();
-  scene.fog=new THREE.FogExp2(0x05050c,0.016);
+  scene.fog=new THREE.FogExp2(0x05050c,0.015);
   camera=new THREE.PerspectiveCamera(52,innerWidth/innerHeight,0.1,100);
-  camera.position.set(0,5.5,13.5);
+  camera.position.set(0,5.8,14);
   renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
   renderer.setSize(innerWidth,innerHeight);
   renderer.setPixelRatio(Math.min(devicePixelRatio,2));
@@ -200,26 +215,27 @@ function startGame(){
   renderer.shadowMap.type=THREE.PCFSoftShadowMap;
   document.body.appendChild(renderer.domElement);
 
-  // Fundo
   bgCanvas=document.createElement('canvas'); bgCanvas.width=1024; bgCanvas.height=512;
   bgCtx=bgCanvas.getContext('2d');
   bgTex=new THREE.CanvasTexture(bgCanvas);
-  bgMesh=new THREE.Mesh(new THREE.SphereGeometry(70,32,16),new THREE.MeshBasicMaterial({map:bgTex,side:THREE.BackSide}));
+  bgMesh=new THREE.Mesh(new THREE.SphereGeometry(75,32,16),new THREE.MeshBasicMaterial({map:bgTex,side:THREE.BackSide}));
   scene.add(bgMesh);
 
-  // Luzes melhores
   scene.add(new THREE.AmbientLight(0x2a2a44,0.5));
   scene.add(new THREE.HemisphereLight(0x5577aa,0x110822,0.5));
-  const s1=new THREE.SpotLight(0xffffff,1.5,45,Math.PI/3.2,0.3,1);
-  s1.position.set(0,16,5); s1.castShadow=true; s1.shadow.mapSize.set(2048,2048); scene.add(s1);
-  const s2=new THREE.SpotLight(0xffcc88,0.7,35,Math.PI/4,0.4); s2.position.set(-9,12,-3); scene.add(s2);
-  const s3=new THREE.SpotLight(0x88aaff,0.55,35,Math.PI/4,0.4); s3.position.set(9,12,-3); scene.add(s3);
+  const s1=new THREE.SpotLight(0xffffff,1.6,50,Math.PI/3.2,0.3,1);
+  s1.position.set(0,17,5); s1.castShadow=true; s1.shadow.mapSize.set(2048,2048); scene.add(s1);
+  scene.add(new THREE.SpotLight(0xffcc88,0.7,40,Math.PI/4,0.4).translateX(-10).translateY(13).translateZ(-4));
+  scene.add(new THREE.SpotLight(0x88aaff,0.55,40,Math.PI/4,0.4).translateX(10).translateY(13).translateZ(-4));
 
   createRing();
-  player=createFighter(playerData.body,playerData.skin);
-  player.position.set(-3.6,0,0); player.rotation.y=Math.PI/2; scene.add(player);
-  enemy=createFighter(enemyData.body,enemyData.skin);
-  enemy.position.set(3.6,0,0); enemy.rotation.y=-Math.PI/2; scene.add(enemy);
+  createCrowd();
+  player=createFighter(playerData.body,playerData.skin,playerData.hair);
+  player.position.set(-3.5,0,0); player.rotation.y=Math.PI/2; scene.add(player);
+  enemy=createFighter(enemyData.body,enemyData.skin,enemyData.hair);
+  enemy.position.set(3.5,0,0); enemy.rotation.y=-Math.PI/2; scene.add(enemy);
+  referee=createReferee();
+  referee.position.set(0,0,-2.2); scene.add(referee);
 
   document.getElementById('playerName').textContent=playerData.name.split(' ')[0].toUpperCase();
   document.getElementById('enemyName').textContent=enemyData.name.split(' ')[0].toUpperCase();
@@ -235,84 +251,63 @@ function startGame(){
   animate();
 }
 
-function createRing(){
-  const ring=new THREE.Group();
-  const floor=new THREE.Mesh(new THREE.CircleGeometry(11.2,64),new THREE.MeshStandardMaterial({color:0x151515,roughness:0.7,metalness:0.1}));
-  floor.rotation.x=-Math.PI/2; floor.receiveShadow=true; ring.add(floor);
-
-  const lc=document.createElement('canvas'); lc.width=512; lc.height=512;
-  const lx=lc.getContext('2d');
-  lx.fillStyle='#0e0e0e'; lx.fillRect(0,0,512,512);
-  lx.strokeStyle='#ffd700'; lx.lineWidth=14;
-  lx.beginPath();
-  for(let i=0;i<8;i++){const a=i/8*Math.PI*2-Math.PI/8;const x=256+Math.cos(a)*190,y=256+Math.sin(a)*190;i?lx.lineTo(x,y):lx.moveTo(x,y);}
-  lx.closePath(); lx.stroke();
-  lx.fillStyle='#ffd700'; lx.font='bold 86px Arial'; lx.textAlign='center'; lx.textBaseline='middle'; lx.fillText('UFC',256,256);
-  const logo=new THREE.Mesh(new THREE.CircleGeometry(3.6,48),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(lc),transparent:true,opacity:0.85}));
-  logo.rotation.x=-Math.PI/2; logo.position.y=0.012; ring.add(logo);
-
-  const fMat=new THREE.MeshStandardMaterial({color:0x222,metalness:0.7,roughness:0.3,transparent:true,opacity:0.88});
-  const pMat=new THREE.MeshStandardMaterial({color:0x3a3a3a,metalness:0.85,roughness:0.2});
-  for(let i=0;i<8;i++){
-    const a=i/8*Math.PI*2, n=(i+1)/8*Math.PI*2, m=(a+n)/2;
-    const post=new THREE.Mesh(new THREE.CylinderGeometry(0.13,0.13,3.3,10),pMat);
-    post.position.set(Math.cos(a)*10.9,1.65,Math.sin(a)*10.9); post.castShadow=true; ring.add(post);
-    const panel=new THREE.Mesh(new THREE.BoxGeometry(8.3,2.8,0.06),fMat);
-    panel.position.set(Math.cos(m)*10.7,1.5,Math.sin(m)*10.7); panel.rotation.y=-m; panel.castShadow=true; ring.add(panel);
-    const rail=new THREE.Mesh(new THREE.BoxGeometry(8.3,0.1,0.1),pMat);
-    rail.position.set(Math.cos(m)*10.7,2.95,Math.sin(m)*10.7); rail.rotation.y=-m; ring.add(rail);
-  }
-  const base=new THREE.Mesh(new THREE.CylinderGeometry(11.8,12.1,0.35,64),new THREE.MeshStandardMaterial({color:0x0a0a0a,roughness:0.85}));
-  base.position.y=-0.18; base.receiveShadow=true; ring.add(base);
-  scene.add(ring);
+function createFaceTexture(skin,hair){
+  const c=createFaceCanvas(skin,hair);
+  const tex=new THREE.CanvasTexture(c);
+  tex.needsUpdate=true;
+  return tex;
 }
 
-function createFighter(bodyCol,skinCol){
+function createFighter(bodyCol,skinCol,hairCol){
   const g=new THREE.Group();
-  const bodyM=new THREE.MeshStandardMaterial({color:bodyCol,roughness:0.5,metalness:0.08});
-  const skinM=new THREE.MeshStandardMaterial({color:skinCol,roughness:0.65});
-  const gloveM=new THREE.MeshStandardMaterial({color:0x111,roughness:0.3,metalness:0.25});
-  const shortM=new THREE.MeshStandardMaterial({color:0x111,roughness:0.6});
+  const bodyM=new THREE.MeshStandardMaterial({color:bodyCol,roughness:0.48,metalness:0.06});
+  const skinM=new THREE.MeshStandardMaterial({color:skinCol,roughness:0.6});
+  const gloveM=new THREE.MeshStandardMaterial({color:0x111,roughness:0.28,metalness:0.3});
+  const shortM=new THREE.MeshStandardMaterial({color:0x111,roughness:0.55});
 
-  // Tronco mais realista
-  const torso=new THREE.Mesh(new THREE.BoxGeometry(1.0,1.25,0.48),bodyM);
-  torso.position.y=1.52; torso.castShadow=true; g.add(torso);
+  // Peito musculoso
+  const chest=new THREE.Mesh(new THREE.BoxGeometry(1.15,0.7,0.55),bodyM);
+  chest.position.y=1.75; chest.castShadow=true; g.add(chest);
+  // Abdômen
+  const abs=new THREE.Mesh(new THREE.BoxGeometry(0.95,0.55,0.45),bodyM);
+  abs.position.y=1.2; abs.castShadow=true; g.add(abs);
 
-  // Ombros
-  const shoulderL=new THREE.Mesh(new THREE.SphereGeometry(0.22,10,10),skinM);
-  shoulderL.position.set(-0.58,2.05,0); shoulderL.castShadow=true; g.add(shoulderL);
-  const shoulderR=new THREE.Mesh(new THREE.SphereGeometry(0.22,10,10),skinM);
-  shoulderR.position.set(0.58,2.05,0); shoulderR.castShadow=true; g.add(shoulderR);
+  // Ombros largos
+  const shL=new THREE.Mesh(new THREE.SphereGeometry(0.26,10,10),skinM);
+  shL.position.set(-0.62,2.05,0); shL.castShadow=true; g.add(shL);
+  const shR=new THREE.Mesh(new THREE.SphereGeometry(0.26,10,10),skinM);
+  shR.position.set(0.62,2.05,0); shR.castShadow=true; g.add(shR);
 
-  // Cabeça
-  const head=new THREE.Mesh(new THREE.SphereGeometry(0.34,14,14),skinM);
-  head.position.y=2.42; head.castShadow=true; g.add(head);
+  // Cabeça com textura de rosto
+  const head=new THREE.Mesh(new THREE.SphereGeometry(0.36,14,14),
+    new THREE.MeshStandardMaterial({map:createFaceTexture(skinCol,hairCol),roughness:0.55}));
+  head.position.y=2.48; head.castShadow=true; g.add(head);
 
-  // Braços
-  const armG=new THREE.BoxGeometry(0.24,0.8,0.24);
-  const leftArm=new THREE.Mesh(armG,skinM); leftArm.position.set(-0.7,1.6,0); leftArm.castShadow=true; g.add(leftArm);
-  const rightArm=new THREE.Mesh(armG,skinM); rightArm.position.set(0.7,1.6,0); rightArm.castShadow=true; g.add(rightArm);
+  // Braços musculosos
+  const armG=new THREE.CylinderGeometry(0.13,0.16,0.75,8);
+  const leftArm=new THREE.Mesh(armG,skinM); leftArm.position.set(-0.75,1.55,0); leftArm.rotation.z=0.15; leftArm.castShadow=true; g.add(leftArm);
+  const rightArm=new THREE.Mesh(armG,skinM); rightArm.position.set(0.75,1.55,0); rightArm.rotation.z=-0.15; rightArm.castShadow=true; g.add(rightArm);
 
-  const foreG=new THREE.BoxGeometry(0.21,0.6,0.21);
-  const leftFore=new THREE.Mesh(foreG,skinM); leftFore.position.set(-0.7,1.0,0); leftFore.castShadow=true; g.add(leftFore);
-  const rightFore=new THREE.Mesh(foreG,skinM); rightFore.position.set(0.7,1.0,0); rightFore.castShadow=true; g.add(rightFore);
+  const foreG=new THREE.CylinderGeometry(0.11,0.13,0.55,8);
+  const leftFore=new THREE.Mesh(foreG,skinM); leftFore.position.set(-0.82,0.95,0); leftFore.castShadow=true; g.add(leftFore);
+  const rightFore=new THREE.Mesh(foreG,skinM); rightFore.position.set(0.82,0.95,0); rightFore.castShadow=true; g.add(rightFore);
 
-  // Luvas maiores
-  const gloveG=new THREE.SphereGeometry(0.19,11,11);
-  const leftGlove=new THREE.Mesh(gloveG,gloveM); leftGlove.position.set(-0.7,0.68,0); leftGlove.castShadow=true; g.add(leftGlove);
-  const rightGlove=new THREE.Mesh(gloveG,gloveM); rightGlove.position.set(0.7,0.68,0); rightGlove.castShadow=true; g.add(rightGlove);
+  // Luvas
+  const gloveG=new THREE.SphereGeometry(0.2,10,10);
+  const leftGlove=new THREE.Mesh(gloveG,gloveM); leftGlove.position.set(-0.82,0.62,0); leftGlove.castShadow=true; g.add(leftGlove);
+  const rightGlove=new THREE.Mesh(gloveG,gloveM); rightGlove.position.set(0.82,0.62,0); rightGlove.castShadow=true; g.add(rightGlove);
 
   // Shorts
-  const shorts=new THREE.Mesh(new THREE.BoxGeometry(1.05,0.55,0.5),shortM);
-  shorts.position.y=0.95; shorts.castShadow=true; g.add(shorts);
+  const shorts=new THREE.Mesh(new THREE.BoxGeometry(1.1,0.5,0.52),shortM);
+  shorts.position.y=0.9; shorts.castShadow=true; g.add(shorts);
 
   // Pernas
-  const legG=new THREE.BoxGeometry(0.3,0.95,0.3);
-  const leftLeg=new THREE.Mesh(legG,skinM); leftLeg.position.set(-0.27,0.45,0); leftLeg.castShadow=true; g.add(leftLeg);
-  const rightLeg=new THREE.Mesh(legG,skinM); rightLeg.position.set(0.27,0.45,0); rightLeg.castShadow=true; g.add(rightLeg);
+  const legG=new THREE.CylinderGeometry(0.14,0.16,0.9,8);
+  const leftLeg=new THREE.Mesh(legG,skinM); leftLeg.position.set(-0.28,0.4,0); leftLeg.castShadow=true; g.add(leftLeg);
+  const rightLeg=new THREE.Mesh(legG,skinM); rightLeg.position.set(0.28,0.4,0); rightLeg.castShadow=true; g.add(rightLeg);
 
   g.userData={
-    leftArm,rightArm,leftFore,rightFore,leftGlove,rightGlove,head,torso,leftLeg,rightLeg,shorts,
+    leftArm,rightArm,leftFore,rightFore,leftGlove,rightGlove,head,chest,abs,
     punching:false,punchSide:'right',punchProgress:0,hitStun:0,
     blocking:false,health:100,knocked:false,
     velocity:new THREE.Vector3(),
@@ -325,254 +320,13 @@ function createFighter(bodyCol,skinCol){
   return g;
 }
 
-function drawBackground(off){
-  const g=bgCtx.createLinearGradient(0,0,0,512);
-  g.addColorStop(0,'#050510'); g.addColorStop(0.35,'#0c0c22'); g.addColorStop(0.7,'#12122e'); g.addColorStop(1,'#080810');
-  bgCtx.fillStyle=g; bgCtx.fillRect(0,0,1024,512);
-  bgCtx.fillStyle='#fff';
-  for(let i=0;i<90;i++){
-    const x=(i*139+off*28)%1024, y=30+(i*91)%190;
-    bgCtx.globalAlpha=0.25+(i%5)*0.1;
-    bgCtx.beginPath(); bgCtx.arc(x,y,0.7+(i%3)*0.5,0,Math.PI*2); bgCtx.fill();
-  }
-  bgCtx.globalAlpha=1;
-  bgCtx.strokeStyle='rgba(70,70,110,0.3)'; bgCtx.lineWidth=2;
-  for(let y=270;y<490;y+=16){bgCtx.beginPath();bgCtx.moveTo(0,y);bgCtx.lineTo(1024,y);bgCtx.stroke();}
-  const lights=[{x:180,y:110},{x:512,y:80},{x:840,y:110},{x:300,y:150},{x:720,y:150}];
-  lights.forEach((l,i)=>{
-    const pulse=0.55+Math.sin(off*2.2+i)*0.3;
-    const grd=bgCtx.createRadialGradient(l.x,l.y,0,l.x,l.y,42);
-    grd.addColorStop(0,`rgba(255,235,170,${0.55*pulse})`);
-    grd.addColorStop(0.45,`rgba(255,190,90,${0.18*pulse})`);
-    grd.addColorStop(1,'rgba(0,0,0,0)');
-    bgCtx.fillStyle=grd; bgCtx.beginPath(); bgCtx.arc(l.x,l.y,48,0,Math.PI*2); bgCtx.fill();
-  });
-}
+function createReferee(){
+  const g=new THREE.Group();
+  const shirt=new THREE.MeshStandardMaterial({color:0xf5f5f5,roughness:0.6});
+  const pants=new THREE.MeshStandardMaterial({color:0x111,roughness:0.5});
+  const skin=new THREE.MeshStandardMaterial({color:0xe0b080,roughness:0.65});
 
-function showMessage(txt,dur=1.3){
-  const el=document.getElementById('message');
-  el.textContent=txt; el.style.opacity=1; messageTimer=dur;
-}
-
-function updateScoreUI(){
-  document.getElementById('round').textContent='ROUND '+currentRound;
-  document.getElementById('score').textContent=`Você ${playerWins} × ${enemyWins} Adversário`;
-}
-
-function punch(f){
-  if(f.userData.punching||f.userData.blocking||f.userData.knocked||f.userData.hitStun>0) return;
-  f.userData.punching=true; f.userData.punchProgress=0;
-  f.userData.punchSide=Math.random()>0.42?'right':'left';
-}
-
-function checkHit(atk,def){
-  const dist=atk.position.distanceTo(def.position);
-  if(dist>2.85) return false;
-  const dir=new THREE.Vector3().subVectors(def.position,atk.position).normalize();
-  const face=new THREE.Vector3(0,0,1).applyQuaternion(atk.quaternion);
-  if(face.dot(dir)<0.2) return false;
-
-  if(def.userData.blocking){
-    def.userData.health=Math.max(0,def.userData.health-2);
-    showMessage('BLOQUEADO!',0.45);
-    createImpact(def.position.clone().add(new THREE.Vector3(0,1.7,0)),0x6699ff,8);
-    return true;
-  }
-
-  const dmg=8+Math.random()*9;
-  def.userData.health=Math.max(0,def.userData.health-dmg);
-  def.userData.velocity.add(dir.multiplyScalar(0.48));
-  def.userData.hitStun=0.35;
-  camShake=0.22;
-  createImpact(def.position.clone().add(new THREE.Vector3(0,1.78,0)),0xffaa00,16);
-
-  // Reação da cabeça
-  def.userData.head.rotation.z=(Math.random()-0.5)*0.4;
-  setTimeout(()=>{if(def.userData.head) def.userData.head.rotation.z=0;},300);
-
-  if(def.userData.health<=0){
-    def.userData.health=0; def.userData.knocked=true;
-    endRound(atk===player);
-  }
-  return true;
-}
-
-function createImpact(pos,col,n=12){
-  for(let i=0;i<n;i++){
-    const p=new THREE.Mesh(new THREE.SphereGeometry(0.04+Math.random()*0.05,5,5),
-      new THREE.MeshBasicMaterial({color:col,transparent:true}));
-    p.position.copy(pos);
-    p.userData.vel=new THREE.Vector3((Math.random()-0.5)*0.4,Math.random()*0.3,(Math.random()-0.5)*0.4);
-    p.userData.life=0.5+Math.random()*0.25;
-    scene.add(p); particles.push(p);
-  }
-}
-
-function endRound(playerWon){
-  if(roundEnding) return;
-  roundEnding=true;
-  document.getElementById('ko').style.opacity='1';
-  if(playerWon){playerWins++; showMessage('VOCÊ GANHOU O ROUND!',2);}
-  else{enemyWins++; showMessage('ADVERSÁRIO GANHOU O ROUND!',2);}
-
-  setTimeout(()=>{
-    document.getElementById('ko').style.opacity='0';
-    if(playerWins>=2||enemyWins>=2){
-      // Fim da luta
-      gameOver=true;
-      const title=playerWins>enemyWins?'VOCÊ VENCEU A LUTA!':'VOCÊ PERDEU A LUTA!';
-      document.getElementById('resultTitle').textContent=title;
-      document.getElementById('resultTitle').style.color=playerWins>enemyWins?'#00e676':'#ff1744';
-      document.getElementById('resultSub').textContent=`Placar final: ${playerWins} × ${enemyWins}`;
-      document.getElementById('resultScreen').style.display='flex';
-    } else {
-      // Próximo round
-      currentRound++;
-      resetRound();
-    }
-  },2200);
-}
-
-function resetRound(){
-  player.userData.health=100; enemy.userData.health=100;
-  player.userData.knocked=false; enemy.userData.knocked=false;
-  player.userData.hitStun=0; enemy.userData.hitStun=0;
-  player.userData.punching=false; enemy.userData.punching=false;
-  player.position.set(-3.6,0,0); enemy.position.set(3.6,0,0);
-  player.rotation.y=Math.PI/2; enemy.rotation.y=-Math.PI/2;
-  player.userData.velocity.set(0,0,0); enemy.userData.velocity.set(0,0,0);
-  roundEnding=false; gameOver=false;
-  updateScoreUI();
-  showMessage('ROUND '+currentRound,1.5);
-}
-
-function updateAI(dt){
-  if(enemy.userData.knocked||gameOver||roundEnding) return;
-  const dist=player.position.distanceTo(enemy.position);
-  const dir=new THREE.Vector3().subVectors(player.position,enemy.position).normalize();
-  enemy.rotation.y=THREE.MathUtils.lerp(enemy.rotation.y,Math.atan2(dir.x,dir.z),0.13);
-  enemyCooldown-=dt;
-  if(dist>3.0) enemy.position.add(dir.clone().multiplyScalar(2.5*dt));
-  else if(dist<1.85) enemy.position.add(dir.clone().multiplyScalar(-1.9*dt));
-  if(enemyCooldown<=0&&dist<3.15){
-    if(Math.random()<0.7) punch(enemy);
-    else{enemy.userData.blocking=true; setTimeout(()=>{if(!enemy.userData.knocked)enemy.userData.blocking=false;},500);}
-    enemyCooldown=0.55+Math.random()*0.9;
-  }
-  const r=Math.sqrt(enemy.position.x**2+enemy.position.z**2);
-  if(r>9.6){enemy.position.x*=9.6/r; enemy.position.z*=9.6/r;}
-}
-
-function updatePunch(f,dt){
-  const ud=f.userData;
-  if(ud.hitStun>0){ud.hitStun-=dt; return;}
-  if(!ud.punching) return;
-  ud.punchProgress+=dt*5.2;
-  const t=Math.min(ud.punchProgress,1);
-  const ease=t<0.45?t/0.45:(1-t)/0.55;
-  const side=ud.punchSide;
-  const arm=side==='right'?ud.rightArm:ud.leftArm;
-  const fore=side==='right'?ud.rightFore:ud.leftFore;
-  const glove=side==='right'?ud.rightGlove:ud.leftGlove;
-  const oA=side==='right'?ud.orig.rightArm:ud.orig.leftArm;
-  const oF=side==='right'?ud.orig.rightFore:ud.orig.leftFore;
-  const oG=side==='right'?ud.orig.rightGlove:ud.orig.leftGlove;
-
-  const fwd=new THREE.Vector3(0,0,1.7*ease).applyQuaternion(f.quaternion);
-  arm.position.copy(oA).add(fwd.clone().multiplyScalar(0.4));
-  fore.position.copy(oF).add(fwd.clone().multiplyScalar(0.8));
-  glove.position.copy(oG).add(fwd);
-  arm.rotation.x=-1.0*ease; fore.rotation.x=-1.4*ease;
-  // Rotação do tronco no soco
-  ud.torso.rotation.y=(side==='right'?-1:1)*0.25*ease;
-
-  if(ud.punchProgress>0.38&&ud.punchProgress<0.55) checkHit(f,f===player?enemy:player);
-  if(ud.punchProgress>=1){
-    ud.punching=false;
-    arm.position.copy(oA); fore.position.copy(oF); glove.position.copy(oG);
-    arm.rotation.x=0; fore.rotation.x=0; ud.torso.rotation.y=0;
-  }
-}
-
-function updateBlock(f){
-  const ud=f.userData;
-  if(ud.blocking&&!ud.punching){
-    ud.leftArm.position.set(-0.5,1.9,0.4); ud.rightArm.position.set(0.5,1.9,0.4);
-    ud.leftFore.position.set(-0.45,1.6,0.6); ud.rightFore.position.set(0.45,1.6,0.6);
-    ud.leftGlove.position.set(-0.4,2.0,0.75); ud.rightGlove.position.set(0.4,2.0,0.75);
-  } else if(!ud.punching){
-    ud.leftArm.position.copy(ud.orig.leftArm); ud.rightArm.position.copy(ud.orig.rightArm);
-    ud.leftFore.position.copy(ud.orig.leftFore); ud.rightFore.position.copy(ud.orig.rightFore);
-    ud.leftGlove.position.copy(ud.orig.leftGlove); ud.rightGlove.position.copy(ud.orig.rightGlove);
-  }
-}
-
-function animate(){
-  requestAnimationFrame(animate);
-  if(!clock) return;
-  const dt=Math.min(clock.getDelta(),0.05);
-  const t=clock.elapsedTime;
-
-  bgOffset+=dt*0.14; drawBackground(bgOffset); bgTex.needsUpdate=true; bgMesh.rotation.y=t*0.01;
-
-  if(!gameOver&&!roundEnding){
-    const move=new THREE.Vector3();
-    if(keys['KeyA']||keys['ArrowLeft']) move.x-=1;
-    if(keys['KeyD']||keys['ArrowRight']) move.x+=1;
-    if(keys['KeyW']||keys['ArrowUp']) move.z-=1;
-    if(keys['KeyS']||keys['ArrowDown']) move.z+=1;
-    if(move.lengthSq()>0){
-      move.normalize().multiplyScalar(3.7*dt);
-      player.position.add(move);
-      player.rotation.y=THREE.MathUtils.lerp(player.rotation.y,Math.atan2(move.x,move.z),0.15);
-    }
-    const pr=Math.sqrt(player.position.x**2+player.position.z**2);
-    if(pr>9.6){player.position.x*=9.6/pr; player.position.z*=9.6/pr;}
-    if(keys['Space']) punch(player);
-    player.userData.blocking=!!(keys['ShiftLeft']||keys['ShiftRight']);
-    updateAI(dt);
-  }
-
-  [player,enemy].forEach(f=>{
-    f.position.add(f.userData.velocity);
-    f.userData.velocity.multiplyScalar(0.8);
-    if(f.userData.velocity.lengthSq()<0.0001) f.userData.velocity.set(0,0,0);
-  });
-
-  updatePunch(player,dt); updatePunch(enemy,dt);
-  updateBlock(player); updateBlock(enemy);
-
-  for(let i=particles.length-1;i>=0;i--){
-    const p=particles[i];
-    p.position.add(p.userData.vel); p.userData.vel.y-=0.5*dt;
-    p.userData.life-=dt; p.material.opacity=Math.max(0,p.userData.life/0.55);
-    if(p.userData.life<=0){scene.remove(p); particles.splice(i,1);}
-  }
-
-  // Câmera + shake
-  const mid=new THREE.Vector3().addVectors(player.position,enemy.position).multiplyScalar(0.5);
-  let sx=0,sy=0;
-  if(camShake>0){camShake-=dt; sx=(Math.random()-0.5)*camShake*1.8; sy=(Math.random()-0.5)*camShake*1.2;}
-  camera.position.x=THREE.MathUtils.lerp(camera.position.x,mid.x*0.35+sx,0.05);
-  camera.position.z=THREE.MathUtils.lerp(camera.position.z,mid.z+13.2,0.05);
-  camera.position.y=THREE.MathUtils.lerp(camera.position.y,5.2+sy,0.04);
-  camera.lookAt(mid.x,1.65,mid.z);
-
-  const pHp=Math.round(player.userData.health), eHp=Math.round(enemy.userData.health);
-  document.getElementById('playerFill').style.width=pHp+'%';
-  document.getElementById('enemyFill').style.width=eHp+'%';
-  document.getElementById('playerHpText').textContent=pHp+'%';
-  document.getElementById('enemyHpText').textContent=eHp+'%';
-
-  if(messageTimer>0){messageTimer-=dt; if(messageTimer<=0) document.getElementById('message').style.opacity=0;}
-
-  player.userData.torso.position.y=1.52+Math.sin(t*1.7)*0.015;
-  enemy.userData.torso.position.y=1.52+Math.sin(t*1.7+1)*0.015;
-
-  frameCount++;
-  if(performance.now()-lastFps>1000){document.getElementById('fps').textContent=frameCount+' FPS'; frameCount=0; lastFps=performance.now();}
-  renderer.render(scene,camera);
-}
-</script>
-</body>
-</html>
+  const torso=new THREE.Mesh(new THREE.BoxGeometry(0.85,1.1,0.4),shirt);
+  torso.position.y=1.5; torso.castShadow=true; g.add(torso);
+  const head=new THREE.Mesh(new THREE.SphereGeometry(0.3,12,12),skin);
+  head.position.y=2.3; head.castShadow=true; g.add(head);
