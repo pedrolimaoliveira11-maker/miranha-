@@ -370,4 +370,226 @@ function drawBackground(off){
   lights.forEach((l,i)=>{const pulse=0.48+Math.sin(off*2+i)*0.28;const grd=bgCtx.createRadialGradient(l.x,l.y,0,l.x,l.y,38);grd.addColorStop(0,`rgba(255,230,150,${0.48*pulse})`);grd.addColorStop(0.5,`rgba(255,175,70,${0.14*pulse})`);grd.addColorStop(1,'rgba(0,0,0,0)');bgCtx.fillStyle=grd;bgCtx.beginPath();bgCtx.arc(l.x,l.y,42,0,Math.PI*2);bgCtx.fill();});
 }
 
-function 
+function showMessage(txt,dur=1.2){const el=document.getElementById('message');el.textContent=txt;el.style.opacity=1;messageTimer=dur;}
+function updateScoreUI(){document.getElementById('round').textContent='ROUND '+currentRound;document.getElementById('score').textContent=`Você ${playerWins} × ${enemyWins} Adversário`;}
+
+function punch(f){
+  if(f.userData.punching||f.userData.blocking||f.userData.knocked||f.userData.hitStun>0)return;
+  f.userData.punching=true;f.userData.punchProgress=0;
+  f.userData.punchSide=Math.random()>0.4?'right':'left';
+}
+
+function spawnBlood(pos){
+  for(let i=0;i<20;i++){
+    const p=new THREE.Mesh(new THREE.SphereGeometry(0.03+Math.random()*0.04,5,5),new THREE.MeshBasicMaterial({color:0x8b0000,transparent:true}));
+    p.position.copy(pos);
+    p.userData.vel=new THREE.Vector3((Math.random()-0.5)*0.35,Math.random()*0.25,(Math.random()-0.5)*0.35);
+    p.userData.life=0.7+Math.random()*0.4;
+    scene.add(p);particles.push(p);
+  }
+}
+
+function checkHit(atk,def){
+  const dist=atk.position.distanceTo(def.position);
+  if(dist>2.85)return false;
+  const dir=new THREE.Vector3().subVectors(def.position,atk.position).normalize();
+  const face=new THREE.Vector3(0,0,1).applyQuaternion(atk.quaternion);
+  if(face.dot(dir)<0.15)return false;
+
+  if(def.userData.blocking){
+    def.userData.health=Math.max(0,def.userData.health-1.8);
+    showMessage('BLOQUEADO!',0.35);
+    createImpact(def.position.clone().add(new THREE.Vector3(0,1.7,0)),0x6699ff,7);
+    return true;
+  }
+
+  const dmg=7.5+Math.random()*9;
+  def.userData.health=Math.max(0,def.userData.health-dmg);
+  def.userData.velocity.add(dir.multiplyScalar(0.48));
+  def.userData.hitStun=0.3;
+  camShake=0.22;
+  createImpact(def.position.clone().add(new THREE.Vector3(0,1.75,0)),0xffaa00,16);
+  def.userData.head.rotation.z=(Math.random()-0.5)*0.4;
+  setTimeout(()=>{if(def.userData.head)def.userData.head.rotation.z=0;},260);
+
+  // Contador de hits para sangue
+  if(atk===player){
+    playerHitCount++;
+    if(playerHitCount%2===0) spawnBlood(def.position.clone().add(new THREE.Vector3(0,1.7,0)));
+  } else {
+    enemyHitCount++;
+    if(enemyHitCount%2===0) spawnBlood(def.position.clone().add(new THREE.Vector3(0,1.7,0)));
+  }
+
+  if(def.userData.health<=0){def.userData.health=0;def.userData.knocked=true;endRound(atk===player);}
+  return true;
+}
+
+function createImpact(pos,col,n=12){
+  for(let i=0;i<n;i++){
+    const p=new THREE.Mesh(new THREE.SphereGeometry(0.035+Math.random()*0.04,5,5),new THREE.MeshBasicMaterial({color:col,transparent:true}));
+    p.position.copy(pos);
+    p.userData.vel=new THREE.Vector3((Math.random()-0.5)*0.4,Math.random()*0.3,(Math.random()-0.5)*0.4);
+    p.userData.life=0.45+Math.random()*0.25;
+    scene.add(p);particles.push(p);
+  }
+}
+
+function endRound(playerWon){
+  if(roundEnding)return;
+  roundEnding=true;
+  document.getElementById('ko').style.opacity='1';
+  if(playerWon){playerWins++;showMessage('VOCÊ GANHOU O ROUND!',1.7);}
+  else{enemyWins++;showMessage('ADVERSÁRIO GANHOU O ROUND!',1.7);}
+  setTimeout(()=>{
+    document.getElementById('ko').style.opacity='0';
+    if(playerWins>=2||enemyWins>=2){
+      gameOver=true;
+      const win=playerWins>enemyWins;
+      document.getElementById('resultTitle').textContent=win?'VOCÊ VENCEU A LUTA!':'VOCÊ PERDEU A LUTA!';
+      document.getElementById('resultTitle').style.color=win?'#00e676':'#ff1744';
+      document.getElementById('resultSub').textContent=`Placar final: ${playerWins} × ${enemyWins}`;
+      document.getElementById('resultScreen').style.display='flex';
+    } else {currentRound++;resetRound();}
+  },2000);
+}
+
+function resetRound(){
+  player.userData.health=100;enemy.userData.health=100;
+  player.userData.knocked=false;enemy.userData.knocked=false;
+  player.userData.hitStun=0;enemy.userData.hitStun=0;
+  player.userData.punching=false;enemy.userData.punching=false;
+  player.position.set(-3.4,0,0);enemy.position.set(3.4,0,0);
+  player.rotation.y=Math.PI/2;enemy.rotation.y=-Math.PI/2;
+  player.userData.velocity.set(0,0,0);enemy.userData.velocity.set(0,0,0);
+  playerHitCount=0;enemyHitCount=0;
+  roundEnding=false;gameOver=false;
+  updateScoreUI();showMessage('ROUND '+currentRound,1.3);
+}
+
+function updateAI(dt){
+  if(enemy.userData.knocked||gameOver||roundEnding)return;
+  const dist=player.position.distanceTo(enemy.position);
+  const dir=new THREE.Vector3().subVectors(player.position,enemy.position).normalize();
+  enemy.rotation.y=THREE.MathUtils.lerp(enemy.rotation.y,Math.atan2(dir.x,dir.z),0.12);
+  enemyCooldown-=dt;
+  if(dist>2.95)enemy.position.add(dir.clone().multiplyScalar(2.4*dt));
+  else if(dist<1.85)enemy.position.add(dir.clone().multiplyScalar(-1.8*dt));
+  if(enemyCooldown<=0&&dist<3.15){
+    if(Math.random()<0.7)punch(enemy);
+    else{enemy.userData.blocking=true;setTimeout(()=>{if(!enemy.userData.knocked)enemy.userData.blocking=false;},450);}
+    enemyCooldown=0.48+Math.random()*0.8;
+  }
+  const r=Math.sqrt(enemy.position.x**2+enemy.position.z**2);
+  if(r>9.3){enemy.position.x*=9.3/r;enemy.position.z*=9.3/r;}
+}
+
+function updatePunch(f,dt){
+  const ud=f.userData;
+  if(ud.hitStun>0){ud.hitStun-=dt;return;}
+  if(!ud.punching)return;
+  ud.punchProgress+=dt*5.4;
+  const t=Math.min(ud.punchProgress,1);
+  const ease=t<0.4?t/0.4:(1-t)/0.6;
+  const side=ud.punchSide;
+  const arm=side==='right'?ud.rightArm:ud.leftArm;
+  const fore=side==='right'?ud.rightFore:ud.leftFore;
+  const glove=side==='right'?ud.rightGlove:ud.leftGlove;
+  const oA=side==='right'?ud.orig.rightArm:ud.orig.leftArm;
+  const oF=side==='right'?ud.orig.rightFore:ud.orig.leftFore;
+  const oG=side==='right'?ud.orig.rightGlove:ud.orig.leftGlove;
+
+  const fwd=new THREE.Vector3(0,0,1.7*ease).applyQuaternion(f.quaternion);
+  arm.position.copy(oA).add(fwd.clone().multiplyScalar(0.4));
+  fore.position.copy(oF).add(fwd.clone().multiplyScalar(0.8));
+  glove.position.copy(oG).add(fwd);
+  arm.rotation.x=-1.0*ease;fore.rotation.x=-1.4*ease;
+  if(ud.chest)ud.chest.rotation.y=(side==='right'?-1:1)*0.2*ease;
+
+  if(ud.punchProgress>0.35&&ud.punchProgress<0.52)checkHit(f,f===player?enemy:player);
+  if(ud.punchProgress>=1){
+    ud.punching=false;
+    arm.position.copy(oA);fore.position.copy(oF);glove.position.copy(oG);
+    arm.rotation.x=0;fore.rotation.x=0;
+    if(ud.chest)ud.chest.rotation.y=0;
+  }
+}
+
+function updateBlock(f){
+  const ud=f.userData;
+  if(ud.blocking&&!ud.punching){
+    ud.leftArm.position.set(-0.52,1.9,0.4);ud.rightArm.position.set(0.52,1.9,0.4);
+    ud.leftFore.position.set(-0.48,1.6,0.58);ud.rightFore.position.set(0.48,1.6,0.58);
+    ud.leftGlove.position.set(-0.42,2.0,0.72);ud.rightGlove.position.set(0.42,2.0,0.72);
+  }else if(!ud.punching){
+    ud.leftArm.position.copy(ud.orig.leftArm);ud.rightArm.position.copy(ud.orig.rightArm);
+    ud.leftFore.position.copy(ud.orig.leftFore);ud.rightFore.position.copy(ud.orig.rightFore);
+    ud.leftGlove.position.copy(ud.orig.leftGlove);ud.rightGlove.position.copy(ud.orig.rightGlove);
+  }
+}
+
+function animate(){
+  requestAnimationFrame(animate);
+  if(!clock)return;
+  const dt=Math.min(clock.getDelta(),0.05);
+  const t=clock.elapsedTime;
+
+  bgOffset+=dt*0.12;drawBackground(bgOffset);bgTex.needsUpdate=true;bgMesh.rotation.y=t*0.007;
+
+  if(!gameOver&&!roundEnding){
+    const move=new THREE.Vector3();
+    if(keys['KeyA']||keys['ArrowLeft'])move.x-=1;
+    if(keys['KeyD']||keys['ArrowRight'])move.x+=1;
+    if(keys['KeyW']||keys['ArrowUp'])move.z-=1;
+    if(keys['KeyS']||keys['ArrowDown'])move.z+=1;
+    if(move.lengthSq()>0){
+      move.normalize().multiplyScalar(3.5*dt);
+      player.position.add(move);
+      player.rotation.y=THREE.MathUtils.lerp(player.rotation.y,Math.atan2(move.x,move.z),0.13);
+    }
+    const pr=Math.sqrt(player.position.x**2+player.position.z**2);
+    if(pr>9.3){player.position.x*=9.3/pr;player.position.z*=9.3/pr;}
+    if(keys['Space'])punch(player);
+    player.userData.blocking=!!(keys['ShiftLeft']||keys['ShiftRight']);
+    updateAI(dt);
+  }
+
+  [player,enemy].forEach(f=>{f.position.add(f.userData.velocity);f.userData.velocity.multiplyScalar(0.78);if(f.userData.velocity.lengthSq()<0.0001)f.userData.velocity.set(0,0,0);});
+
+  updatePunch(player,dt);updatePunch(enemy,dt);
+  updateBlock(player);updateBlock(enemy);
+  if(referee)referee.rotation.y=Math.sin(t*0.55)*0.12;
+
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i];
+    p.position.add(p.userData.vel);p.userData.vel.y-=0.55*dt;
+    p.userData.life-=dt;p.material.opacity=Math.max(0,p.userData.life/0.7);
+    if(p.userData.life<=0){scene.remove(p);particles.splice(i,1);}
+  }
+
+  const mid=new THREE.Vector3().addVectors(player.position,enemy.position).multiplyScalar(0.5);
+  let sx=0,sy=0;
+  if(camShake>0){camShake-=dt;sx=(Math.random()-0.5)*camShake*1.7;sy=(Math.random()-0.5)*camShake*1.1;}
+  camera.position.x=THREE.MathUtils.lerp(camera.position.x,mid.x*0.28+sx,0.045);
+  camera.position.z=THREE.MathUtils.lerp(camera.position.z,mid.z+14,0.045);
+  camera.position.y=THREE.MathUtils.lerp(camera.position.y,5.6+sy,0.035);
+  camera.lookAt(mid.x,1.65,mid.z);
+
+  const pHp=Math.round(player.userData.health),eHp=Math.round(enemy.userData.health);
+  document.getElementById('playerFill').style.width=pHp+'%';
+  document.getElementById('enemyFill').style.width=eHp+'%';
+  document.getElementById('playerHpText').textContent=pHp+'%';
+  document.getElementById('enemyHpText').textContent=eHp+'%';
+
+  if(messageTimer>0){messageTimer-=dt;if(messageTimer<=0)document.getElementById('message').style.opacity=0;}
+
+  if(player.userData.chest)player.userData.chest.position.y=1.9+Math.sin(t*1.5)*0.01;
+  if(enemy.userData.chest)enemy.userData.chest.position.y=1.9+Math.sin(t*1.5+1)*0.01;
+
+  frameCount++;
+  if(performance.now()-lastFps>1000){document.getElementById('fps').textContent=frameCount+' FPS';frameCount=0;lastFps=performance.now();}
+  renderer.render(scene,camera);
+}
+</script>
+</body>
+</html>
